@@ -2,47 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fix layout Vite - FULL SCREEN */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+:root {
+  /* Definiamo i colori */
+  --color-lib-dark: #0f0f14;
+  --color-lib-secondary: #1a1a24;
+  --color-lib-card: #16161e;
+  --color-lib-border: #2a2a35;
+  --color-lib-primary: #8b5cf6;
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-}
-
-#root {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-}
-
-/* Animazione gradiente */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  z-index: -1;
-  animation: gradientShift 8s ease infinite;
-}
-
-@keyframes gradientShift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
+@layer base {
+  body {
+    @apply bg-[var(--color-lib-dark)] text-white;
   }
 }
