@@ -5,10 +5,12 @@ import { AuthContext } from '../../context/AuthContext';
 const BookingForm = ({ parking, onSuccess, onCancel }) => {
   const { user } = useContext(AuthContext);
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [hour, setHour] = useState('');
+  const [minute, setMinute] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     const uniqueCode = `BS-${parking.id}-${Date.now().toString().slice(-4)}`;
 
     const newBooking = {
@@ -51,13 +53,36 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
           
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Orario Arrivo</label>
-            <input 
-              type="time" 
-              required 
-              value={time} 
-              onChange={(e) => setTime(e.target.value)} 
-              className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent"
-            />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <select 
+                  required 
+                  value={hour} 
+                  onChange={(e) => setHour(e.target.value)} 
+                  className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent"
+                >
+                  {[...Array(24)].map((_, i) => (
+                    <option key={i} value={i}>
+                      {String(i).padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <select 
+                  required 
+                  value={minute} 
+                  onChange={(e) => setMinute(e.target.value)} 
+                  className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent"
+                >
+                  {[0, 15, 30, 45].map((m) => (
+                    <option key={m} value={m}>
+                      {String(m).padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
           
           <div className="flex justify-end gap-3 pt-4 border-t border-lib-border">

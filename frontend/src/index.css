@@ -66,4 +66,16 @@
     @apply transition-colors duration-300;
     border-color: var(--color-lib-border);
   }
+
+  /* Icone bianche per input date e time */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-inner-spin-button {
+    filter: invert(1);
+  }
 }
