@@ -3,11 +3,13 @@ import Header from '../components/layout/Header';
 import ParkingList from '../components/user/ParkingList';
 import BookingList from '../components/user/BookingList';
 import BookingForm from '../components/user/BookingForm';
+import AccountSettings from '../components/user/AccountSettings';
 import { AuthContext } from '../context/AuthContext';
 
 const UserDashboard = () => {
   const { user } = useContext(AuthContext);
   const [selectedParking, setSelectedParking] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [refreshBookings, setRefreshBookings] = useState(0);
 
   const handleOpenBooking = (parking) => {
@@ -25,7 +27,7 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-lib-dark flex flex-col">
-      <Header title="Green Parking Brescia" user={user} />
+      <Header title="Green Parking Brescia" user={user} onOpenSettings={() => setShowSettings(true)} />
       
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -55,6 +57,11 @@ const UserDashboard = () => {
             onSuccess={handleBookingSuccess} 
             onCancel={handleCloseForm}
           />
+        )}
+
+        {/* Impostazioni Account */}
+        {showSettings && (
+          <AccountSettings onClose={() => setShowSettings(false)} />
         )}
       </main>
     </div>
