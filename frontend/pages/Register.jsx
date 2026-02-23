@@ -13,6 +13,7 @@ const Register = () => {
     setError('');
     
     try {
+      console.log('Registrazione in corso...');
       await mockApi.register(userData);
       alert("Account Green creato con successo! 🌱");
       navigate('/login');
@@ -31,7 +32,7 @@ const Register = () => {
             Unisciti a noi <span role="img" aria-label="leaf">🌿</span>
           </h2>
           <p className="text-gray-400 text-sm">
-            Crea il tuo account per parcheggiare a Brescia risparmiando CO2.
+            Crea il tuo account per parcheggiare a Brescia risparmiando CO2. Veloce e sicuro!
           </p>
         </div>
 
