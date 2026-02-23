@@ -26,8 +26,8 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-lib-dark flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-md bg-lib-card border border-lib-border rounded-2xl shadow-2xl p-8">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-xl bg-lib-card border border-lib-border rounded-2xl p-6">
+        <div className="text-center mb-5">
           <h2 className="text-3xl font-bold text-white mb-2">
             Unisciti a noi <span role="img" aria-label="leaf">🌿</span>
           </h2>
@@ -38,7 +38,7 @@ const Register = () => {
 
         <RegisterForm onSubmit={handleRegister} error={error} isLoading={isLoading} />
 
-        <div className="mt-6 text-center text-sm text-gray-400">
+        <div className="mt-4 text-center text-sm text-gray-400">
           Hai già un account?{' '}
           <Link to="/login" className="text-lib-primary hover:text-purple-400 font-medium transition-colors">
             Accedi qui
