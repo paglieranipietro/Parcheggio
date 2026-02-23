@@ -8,6 +8,10 @@ const RegisterForm = ({ onSubmit, error, isLoading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (password !== passwordConfirm) {
+      alert('Le password non corrispondono');
+      return;
+    }
     onSubmit({ name, email, password });
   };
 
