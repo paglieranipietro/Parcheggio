@@ -29,10 +29,10 @@ const Register = () => {
       <div className="w-full max-w-xl bg-lib-card border border-lib-border rounded-2xl p-6">
         <div className="text-center mb-5">
           <h2 className="text-3xl font-bold text-white mb-2">
-            Unisciti a noi <span role="img" aria-label="leaf">🌿</span>
+            Unisciti a noi
           </h2>
           <p className="text-gray-400 text-sm">
-            Crea il tuo account per parcheggiare a Brescia risparmiando CO2. Veloce e sicuro!
+            Crea il tuo account per accedere alla nostra app Parcheggio
           </p>
         </div>
 
