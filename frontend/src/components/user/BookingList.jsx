@@ -5,6 +5,7 @@ import { AuthContext } from '../../context/AuthContext';
 const BookingList = ({ refreshTrigger }) => {
   const { user } = useContext(AuthContext);
   const [bookings, setBookings] = useState([]);
+  const [searchCode, setSearchCode] = useState('');
 
   useEffect(() => {
     const userBookings = mockApi.getBookingsByUser(user.id);
@@ -18,14 +19,31 @@ const BookingList = ({ refreshTrigger }) => {
     }
   };
 
+  const filteredBookings = bookings.filter(booking =>
+    booking.code.toLowerCase().includes(searchCode.toLowerCase())
+  );
+
   return (
     <div className="bg-lib-card rounded-lg shadow overflow-hidden border border-lib-border">
-      <div className="px-6 py-4 border-b border-lib-border bg-lib-secondary flex justify-between items-center">
-        <h3 className="text-lg font-medium text-primary">Le tue Prenotazioni</h3>
-        <span className="text-sm text-tertiary">{bookings.length} attive</span>
+      <div className="px-6 py-4 border-b border-lib-border bg-lib-secondary">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-primary">Le tue Prenotazioni</h3>
+          <span className="text-sm text-tertiary">{filteredBookings.length} di {bookings.length}</span>
+        </div>
+        <input
+          type="text"
+          placeholder="Cerca per codice univoco..."
+          value={searchCode}
+          onChange={(e) => setSearchCode(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg bg-lib-card border border-lib-border text-primary placeholder-tertiary focus:outline-none focus:border-lib-primary transition-colors"
+        />
       </div>
 
-      {bookings.length === 0 ? (
+      {filteredBookings.length === 0 && searchCode ? (
+        <div className="p-8 text-center text-tertiary">
+          Nessuna prenotazione trovata per il codice "{searchCode}".
+        </div>
+      ) : filteredBookings.length === 0 ? (
         <div className="p-8 text-center text-tertiary">
           Nessuna prenotazione attiva al momento.
         </div>
@@ -41,7 +59,7 @@ const BookingList = ({ refreshTrigger }) => {
               </tr>
             </thead>
             <tbody className="bg-lib-card divide-y divide-lib-border">
-              {bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-lib-secondary/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
                     {booking.parkingName}
