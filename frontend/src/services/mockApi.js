@@ -21,7 +21,7 @@ let parkings = [
     name: "Parcheggio Stazione",
     address: "Viale della Stazione, Brescia",
     totalSpots: 150,
-    freeSpots: 0,
+    freeSpots: 1,
     co2: 200
   },
   {

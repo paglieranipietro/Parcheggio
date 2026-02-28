@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { mockApi } from '../../services/mockApi';
 
-const ParkingList = ({ onSelectParking }) => {
+const ParkingList = ({ onSelectParking, refreshTrigger }) => {
   const [parkings, setParkings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -9,7 +9,7 @@ const ParkingList = ({ onSelectParking }) => {
     const data = mockApi.getParkings();
     setParkings(data);
     setLoading(false);
-  }, []);
+  }, [refreshTrigger]);
 
   if (loading) return <div className="text-center p-4 text-tertiary">Caricamento parcheggi...</div>;
 

@@ -47,7 +47,7 @@ const UserDashboard = () => {
 
         {/* Sezione Ricerca Parcheggio */}
         <section>
-          <ParkingList onSelectParking={handleOpenBooking} />
+          <ParkingList onSelectParking={handleOpenBooking} refreshTrigger={refreshBookings} />
         </section>
 
         {/* Modale */}
