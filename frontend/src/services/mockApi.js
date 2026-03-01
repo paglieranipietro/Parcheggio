@@ -6,7 +6,8 @@ let parkings = [
     address: "Piazza della Vittoria, Brescia",
     totalSpots: 100,
     freeSpots: 42,
-    co2: 150 // Risparmio stimato in grammi
+    co2: 150, // Risparmio stimato in grammi
+    hourlyRate: 1.40 // €/ora
   },
   {
     id: 2,
@@ -14,15 +15,17 @@ let parkings = [
     address: "Piazzale Arnaldo, Brescia",
     totalSpots: 80,
     freeSpots: 5,
-    co2: 120
+    co2: 120,
+    hourlyRate: 1.90
   },
   {
     id: 3,
     name: "Parcheggio Stazione",
     address: "Viale della Stazione, Brescia",
-    totalSpots: 150,
+    totalSpots: 1,
     freeSpots: 1,
-    co2: 200
+    co2: 200,
+    hourlyRate: 1.10
   },
   {
     id: 4,
@@ -30,7 +33,8 @@ let parkings = [
     address: "Via Brescia Due, Brescia",
     totalSpots: 60,
     freeSpots: 25,
-    co2: 90
+    co2: 90,
+    hourlyRate: 0.80
   }
 ];
 
@@ -47,7 +51,7 @@ export const mockApi = {
 
   // --- GESTIONE PRENOTAZIONI (User Role) ---
 
-  // Crea una nuova prenotazione e aggiorna i posti liberi
+  // Crea una nuova prenotazione
   createBooking: (bookingData) => {
     const newBooking = {
       ...bookingData,
@@ -57,13 +61,6 @@ export const mockApi = {
     
     bookings.push(newBooking);
 
-    // Simuliamo la riduzione dei posti liberi nel parcheggio selezionato
-    parkings = parkings.map(p => 
-      p.id === bookingData.parkingId 
-        ? { ...p, freeSpots: p.freeSpots - 1 } 
-        : p
-    );
-
     return newBooking;
   },
 
@@ -72,22 +69,90 @@ export const mockApi = {
     return bookings.filter(b => b.userId === userId);
   },
 
-  // Cancella una prenotazione e ripristina il posto auto
-  deleteBooking: (bookingId) => {
-    const bookingToDelete = bookings.find(b => b.id === bookingId);
+  // Calcola i posti disponibili per un parcheggio in una data specifica
+  // Se viene fornito un orario, calcola i posti considerando la scadenza delle prenotazioni a quell'orario
+  getAvailableSpotsForDate: (parkingId, date, time = null) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Se time è fornito, convertilo in minuti per il controllo futuro
+    let targetHour = currentHour;
+    let targetMinute = currentMinute;
     
-    if (bookingToDelete) {
-      // Ripristiniamo il posto nel parcheggio
-      parkings = parkings.map(p => 
-        p.id === bookingToDelete.parkingId 
-          ? { ...p, freeSpots: p.freeSpots + 1 } 
-          : p
-      );
-      
-      // Rimuoviamo la prenotazione dall'array
-      bookings = bookings.filter(b => b.id !== bookingId);
+    if (time) {
+      const [hour, minute] = time.split(':').map(Number);
+      targetHour = hour;
+      targetMinute = minute;
     }
-    
+
+    const bookingsForDate = bookings.filter(b => {
+      if (b.parkingId !== parkingId || b.date !== date || b.status !== 'active') {
+        return false;
+      }
+
+      // Se è una data nel futuro, la prenotazione è sempre attiva
+      if (date > today) {
+        return true;
+      }
+
+      // Se è oggi, controlla se la prenotazione sarà scaduta all'orario target
+      if (date === today) {
+        const [bookingHour, bookingMinute] = b.time.split(':').map(Number);
+        const bookingDuration = b.duration || 1;
+        
+        // Calcola la fine della prenotazione + 15 minuti buffer
+        let endHour = bookingHour + bookingDuration;
+        let endMinute = bookingMinute + 15; // buffer di 15 minuti
+
+        // Gestisci l'overflow dei minuti
+        if (endMinute >= 60) {
+          endHour += Math.floor(endMinute / 60);
+          endMinute = endMinute % 60;
+        }
+
+        // Gestisci l'overflow delle ore
+        if (endHour >= 24) {
+          return false; // La prenotazione era per oggi e è scaduta ieri
+        }
+
+        // Confronta con l'orario target (attuale o specificato)
+        const targetTotalMinutes = targetHour * 60 + targetMinute;
+        const endTotalMinutes = endHour * 60 + endMinute;
+
+        // Se l'orario target è prima della fine, la prenotazione è ancora attiva
+        return targetTotalMinutes < endTotalMinutes;
+      }
+
+      // Se è una data nel passato, la prenotazione è scaduta
+      return false;
+    });
+
+    return parking.totalSpots - bookingsForDate.length;
+  },
+
+  // Calcola i posti disponibili per un parcheggio in una data e orario specifici
+  getAvailableSpotsForDateTime: (parkingId, date, time) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    const bookingsForDateTime = bookings.filter(b => 
+      b.parkingId === parkingId && 
+      b.date === date && 
+      b.time === time &&
+      b.status === 'active'
+    );
+
+    return parking.totalSpots - bookingsForDateTime.length;
+  },
+
+  // Cancella una prenotazione
+  deleteBooking: (bookingId) => {
+    bookings = bookings.filter(b => b.id !== bookingId);
     return { success: true };
   },
 

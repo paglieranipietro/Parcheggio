@@ -34,22 +34,16 @@ const ParkingList = ({ onSelectParking, refreshTrigger }) => {
             </div>
 
             <div className="mt-4">
-              <div className="flex justify-between items-center mb-4 text-sm">
-                <span className={parking.freeSpots > 0 ? "text-secondary" : "text-red-500 font-bold"}>
-                  Posti liberi: <strong className="text-lg">{parking.freeSpots}</strong>
-                </span>
+              <div className="mb-4 p-3 bg-lib-secondary rounded-md border border-lib-border">
+                <p className="text-sm text-tertiary">
+                  Tariffa oraria: <span className="text-primary font-semibold">€{parking.hourlyRate.toFixed(2)}/ora</span>
+                </p>
               </div>
-
               <button 
                 onClick={() => onSelectParking(parking)}
-                disabled={parking.freeSpots === 0}
-                className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
-                  parking.freeSpots > 0 
-                    ? 'bg-lib-primary text-on-primary hover:opacity-90' 
-                    : 'bg-lib-secondary text-tertiary cursor-not-allowed'
-                }`}
+                className="w-full py-2 px-4 rounded-md font-medium transition-colors bg-lib-primary text-on-primary hover:opacity-90"
               >
-                {parking.freeSpots > 0 ? 'Prenota Posto' : 'Completo'}
+                Prenota Posto
               </button>
             </div>
           </div>
