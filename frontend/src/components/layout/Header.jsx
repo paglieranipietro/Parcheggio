@@ -10,7 +10,6 @@ const Header = ({ title, user, onOpenSettings }) => {
           </div>
           {user && (
             <div className="text-right flex items-center gap-4">
-              <p className="text-primary font-medium">Ciao, {user.name}!</p>
               <button
                 onClick={onOpenSettings}
                 className="px-3 py-1.5 bg-lib-primary text-white rounded-md hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2"

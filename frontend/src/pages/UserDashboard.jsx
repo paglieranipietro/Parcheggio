@@ -33,7 +33,7 @@ const UserDashboard = () => {
         
         {/* Intestazione Dashboard */}
         <div className="mb-8 bg-gradient-to-r from-lib-primary to-lib-secondary rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold mb-2 text-on-primary">Benvenuto, {user?.name}!</h2>
+          <h2 className="text-3xl font-bold mb-2 text-on-primary">Ciao, {user?.name}!</h2>
           <p className="opacity-90 text-on-primary">Gestisci le tue soste e contribuisci a una Brescia più verde e sostenibile.</p>
         </div>
 
