@@ -190,6 +190,101 @@ export const mockApi = {
     return Math.max(0, parking.totalSpots - overlappingBookings.length);
   },
 
+  // Recupera una prenotazione per ID
+  getBookingById: (bookingId) => {
+    return bookings.find(b => b.id === bookingId);
+  },
+
+  // Verifica se un slot è disponibile, escludendo una prenotazione specifica (utile per le modifiche)
+  checkSlotAvailability: (parkingId, date, time, duration = 1, excludeBookingId = null) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    // Converte l'orario richiesto in minuti
+    const requestedStartMinutes = time ? timeToMinutes(time) : 0;
+    const requestedEndMinutes = requestedStartMinutes + (duration * 60);
+
+    // Crea l'intervallo temporale della prenotazione richiesta
+    const requestedInterval = {
+      start: requestedStartMinutes,
+      end: requestedEndMinutes
+    };
+
+    // Filtra le prenotazioni attive per il parcheggio e la data, ESCLUDENDO la prenotazione da modificare
+    const bookingsForDate = bookings.filter(b => 
+      b.parkingId === parkingId && 
+      b.date === date &&
+      b.status === 'active' &&
+      b.id !== excludeBookingId // Escludi la prenotazione che stiamo modificando
+    );
+
+    // Conta quante prenotazioni si sovrappongono cronologicamente
+    const overlappingBookings = bookingsForDate.filter(b => {
+      const bookingStartMinutes = timeToMinutes(b.time);
+      const bookingDuration = b.duration || 1; // Default 1 ora
+      // Aggiungi 15 minuti di buffer di pulizia/cambio dopo ogni prenotazione
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60) + 15;
+
+      const bookingInterval = {
+        start: bookingStartMinutes,
+        end: bookingEndMinutes
+      };
+
+      return intervalsOverlap(requestedInterval, bookingInterval);
+    });
+
+    return {
+      available: overlappingBookings.length < parking.totalSpots,
+      freeSpots: Math.max(0, parking.totalSpots - overlappingBookings.length),
+      totalSpots: parking.totalSpots,
+      occupiedSpots: overlappingBookings.length
+    };
+  },
+
+  // Modifica una prenotazione esistente
+  updateBooking: (bookingId, updateData) => {
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    
+    if (bookingIndex === -1) {
+      return { success: false, error: 'Prenotazione non trovata' };
+    }
+
+    const existingBooking = bookings[bookingIndex];
+
+    // Se la data, ora o durata cambiano, verifica la disponibilità nel nuovo slot
+    if (updateData.date !== existingBooking.date || 
+        updateData.time !== existingBooking.time || 
+        updateData.duration !== existingBooking.duration) {
+      
+      const availability = mockApi.checkSlotAvailability(
+        existingBooking.parkingId,
+        updateData.date,
+        updateData.time,
+        updateData.duration,
+        bookingId // Escludi questa prenotazione dal conteggio
+      );
+
+      if (!availability.available) {
+        return { 
+          success: false, 
+          error: 'Slot non disponibile. Posti liberi: ' + availability.freeSpots + '/' + availability.totalSpots
+        };
+      }
+    }
+
+    // Aggiorna la prenotazione
+    bookings[bookingIndex] = {
+      ...existingBooking,
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return { 
+      success: true, 
+      booking: bookings[bookingIndex]
+    };
+  },
+
   // Cancella una prenotazione
   deleteBooking: (bookingId) => {
     bookings = bookings.filter(b => b.id !== bookingId);

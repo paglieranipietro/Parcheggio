@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { mockApi } from '../../services/mockApi';
 import { AuthContext } from '../../context/AuthContext';
+import EditBookingForm from './EditBookingForm';
 
 const BookingList = ({ refreshTrigger }) => {
   const { user } = useContext(AuthContext);
   const [bookings, setBookings] = useState([]);
   const [searchCode, setSearchCode] = useState('');
+  const [editingBookingId, setEditingBookingId] = useState(null);
 
   useEffect(() => {
     const userBookings = mockApi.getBookingsByUser(user.id);
@@ -17,6 +19,21 @@ const BookingList = ({ refreshTrigger }) => {
       mockApi.deleteBooking(bookingId);
       setBookings(bookings.filter(b => b.id !== bookingId));
     }
+  };
+
+  const handleEditClick = (bookingId) => {
+    setEditingBookingId(bookingId);
+  };
+
+  const handleEditSuccess = () => {
+    setEditingBookingId(null);
+    // Ricarica le prenotazioni
+    const userBookings = mockApi.getBookingsByUser(user.id);
+    setBookings(userBookings);
+  };
+
+  const handleEditCancel = () => {
+    setEditingBookingId(null);
   };
 
   const filteredBookings = bookings.filter(booking =>
@@ -85,18 +102,35 @@ const BookingList = ({ refreshTrigger }) => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button 
-                      onClick={() => handleCancel(booking.id)}
-                      className="text-red-500 hover:text-red-400 font-medium transition-colors"
-                    >
-                      Cancella
-                    </button>
+                    <div className="flex gap-2 justify-end">
+                      <button 
+                        onClick={() => handleEditClick(booking.id)}
+                        className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                      >
+                        Modifica
+                      </button>
+                      <button 
+                        onClick={() => handleCancel(booking.id)}
+                        className="text-red-500 hover:text-red-400 font-medium transition-colors"
+                      >
+                        Cancella
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Modal Modifica Prenotazione */}
+      {editingBookingId && (
+        <EditBookingForm 
+          booking={mockApi.getBookingById(editingBookingId)}
+          onSuccess={handleEditSuccess}
+          onCancel={handleEditCancel}
+        />
       )}
     </div>
   );
