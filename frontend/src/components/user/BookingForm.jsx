@@ -16,17 +16,22 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
     if (!date) return;
 
     const interval = setInterval(() => {
-      // Ricalcola i posti disponibili, passando anche l'orario se selezionato
+      // Ricalcola i posti disponibili, passando anche l'orario e la durata
       let time = null;
       if (hour !== '' && minute !== '') {
         time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
       }
-      const spots = mockApi.getAvailableSpotsForDate(parking.id, date, time);
+      const spots = mockApi.getAvailableSpotsForDateTime(
+        parking.id, 
+        date, 
+        time,
+        parseFloat(duration)
+      );
       setAvailableSpots(spots);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [date, hour, minute, parking.id]);
+  }, [date, hour, minute, duration, parking.id]);
 
   // Calcola il prezzo della prenotazione
   const calculatePrice = () => {
@@ -96,12 +101,17 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
       }
 
       // Se la data è valida, mostra i posti disponibili
-      // Passa anche l'orario se disponibile per considerare la scadenza delle prenotazioni
+      // Passa anche l'orario e la DURATA per considerare sovrapposizioni cronologiche
       let time = null;
       if (selectedHour !== '' && selectedMinute !== '') {
         time = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
       }
-      const spots = mockApi.getAvailableSpotsForDate(parking.id, selectedDate, time);
+      const spots = mockApi.getAvailableSpotsForDateTime(
+        parking.id, 
+        selectedDate, 
+        time,
+        parseFloat(duration)
+      );
       setAvailableSpots(spots);
     } else {
       setAvailableSpots(null);
@@ -124,6 +134,12 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
   const handleMinuteChange = (e) => {
     setMinute(e.target.value);
     updateAvailableSpots(date, hour, e.target.value);
+  };
+
+  const handleDurationChange = (e) => {
+    setDuration(e.target.value);
+    // Ricalcola i posti disponibili quando cambia la durata
+    updateAvailableSpots(date, hour, minute);
   };
 
   const handleSubmit = (e) => {
@@ -234,7 +250,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
               required 
               disabled={!date || hour === '' || minute === ''}
               value={duration} 
-              onChange={(e) => setDuration(e.target.value)} 
+              onChange={handleDurationChange} 
               className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {[1, 2, 3, 4, 5, 6, 8, 12, 24].map((h) => (

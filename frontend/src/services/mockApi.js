@@ -41,6 +41,20 @@ let parkings = [
 // Array per memorizzare le prenotazioni effettuate durante la sessione
 let bookings = [];
 
+// ===== FUNZIONI HELPER (ESTERNE) =====
+// Converte stringa orario "HH:MM" in minuti totali dal giorno
+const timeToMinutes = (timeStr) => {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Controlla se due intervalli temporali si sovrappongono
+// Formula: due intervalli si sovrappongono se start1 < end2 AND start2 < end1
+const intervalsOverlap = (interval1, interval2) => {
+  return interval1.start < interval2.end && interval2.start < interval1.end;
+};
+// ===== FINE FUNZIONI HELPER =====
+
 export const mockApi = {
   // --- GESTIONE PARCHEGGI ---
   
@@ -136,18 +150,44 @@ export const mockApi = {
   },
 
   // Calcola i posti disponibili per un parcheggio in una data e orario specifici
-  getAvailableSpotsForDateTime: (parkingId, date, time) => {
+  // Considera la DURATA delle prenotazioni per la sovrapposizione cronologica
+  getAvailableSpotsForDateTime: (parkingId, date, time, duration = 1) => {
     const parking = parkings.find(p => p.id === parkingId);
     if (!parking) return 0;
 
-    const bookingsForDateTime = bookings.filter(b => 
+    // Converte l'orario richiesto in minuti
+    const requestedStartMinutes = time ? timeToMinutes(time) : 0;
+    const requestedEndMinutes = requestedStartMinutes + (duration * 60);
+
+    // Crea l'intervallo temporale della prenotazione richiesta
+    const requestedInterval = {
+      start: requestedStartMinutes,
+      end: requestedEndMinutes
+    };
+
+    // Filtra le prenotazioni attive per il parcheggio e la data
+    const bookingsForDate = bookings.filter(b => 
       b.parkingId === parkingId && 
-      b.date === date && 
-      b.time === time &&
+      b.date === date &&
       b.status === 'active'
     );
 
-    return parking.totalSpots - bookingsForDateTime.length;
+    // Conta quante prenotazioni si sovrappongono cronologicamente
+    const overlappingBookings = bookingsForDate.filter(b => {
+      const bookingStartMinutes = timeToMinutes(b.time);
+      const bookingDuration = b.duration || 1; // Default 1 ora
+      // Aggiungi 15 minuti di buffer di pulizia/cambio dopo ogni prenotazione
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60) + 15;
+
+      const bookingInterval = {
+        start: bookingStartMinutes,
+        end: bookingEndMinutes
+      };
+
+      return intervalsOverlap(requestedInterval, bookingInterval);
+    });
+
+    return Math.max(0, parking.totalSpots - overlappingBookings.length);
   },
 
   // Cancella una prenotazione
