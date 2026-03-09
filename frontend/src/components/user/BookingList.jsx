@@ -55,6 +55,7 @@ const BookingList = ({ refreshTrigger }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Parcheggio</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Data/Ora</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Durata</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Targa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Prezzo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Codice Univoco</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-tertiary uppercase tracking-wider">Azioni</th>
@@ -71,6 +72,9 @@ const BookingList = ({ refreshTrigger }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
                     {booking.duration} {booking.duration === 1 ? 'ora' : 'ore'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className="font-mono font-bold text-lib-primary">{booking.licensePlate || 'N/A'}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">
                     €{booking.price?.toFixed(2) || '0.00'}

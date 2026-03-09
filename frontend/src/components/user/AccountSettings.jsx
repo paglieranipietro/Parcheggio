@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 
 const AccountSettings = ({ onClose }) => {
-  const { user, updateUser } = useContext(AuthContext);
+  const { user, updateUser, addLicensePlate, removeLicensePlate, selectLicensePlate } = useContext(AuthContext);
   const [editData, setEditData] = useState({
     name: user?.name || '',
     surname: user?.surname || '',
@@ -15,6 +15,8 @@ const AccountSettings = ({ onClose }) => {
   const [editingField, setEditingField] = useState(null);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [newPlate, setNewPlate] = useState('');
+  const [plateMessage, setPlateMessage] = useState('');
 
   const handleChange = (field, value) => {
     setEditData(prev => ({
@@ -38,6 +40,47 @@ const AccountSettings = ({ onClose }) => {
     setEditingField(null);
     setMessage(`${fieldLabels[field]} aggiornato con successo!`);
     setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleAddPlate = () => {
+    if (!newPlate.trim()) {
+      setPlateMessage({ type: 'error', text: 'Inserisci una targa valida' });
+      setTimeout(() => setPlateMessage(''), 3000);
+      return;
+    }
+    
+    // Verifica il formato della targa: 2 lettere + 3 numeri + 2 lettere
+    const plateRegex = /^[A-Z]{2}\d{3}[A-Z]{2}$/;
+    if (!plateRegex.test(newPlate)) {
+      setPlateMessage({ type: 'error', text: 'Formato non valido. Usa: 2 lettere, 3 numeri, 2 lettere (es: AB123CD)' });
+      setTimeout(() => setPlateMessage(''), 3000);
+      return;
+    }
+    
+    // Verifica che la targa non sia già presente
+    if (user.licensePlates.some(p => p.plate === newPlate.toUpperCase())) {
+      setPlateMessage({ type: 'error', text: 'Questa targa è già registrata' });
+      setTimeout(() => setPlateMessage(''), 3000);
+      return;
+    }
+
+    addLicensePlate(newPlate);
+    setNewPlate('');
+    setPlateMessage({ type: 'success', text: 'Targa aggiunta con successo!' });
+    setTimeout(() => setPlateMessage(''), 3000);
+  };
+
+  const handleRemovePlate = (plateId) => {
+    removeLicensePlate(plateId);
+    setPlateMessage({ type: 'success', text: 'Targa rimossa con successo!' });
+    setTimeout(() => setPlateMessage(''), 3000);
+  };
+
+  const handleSelectPlate = (plateId) => {
+    selectLicensePlate(plateId);
+    const selectedPlate = user.licensePlates.find(p => p.id === plateId);
+    setPlateMessage({ type: 'success', text: `Targa ${selectedPlate.plate} selezionata` });
+    setTimeout(() => setPlateMessage(''), 3000);
   };
 
   const handleCancelField = (field) => {
@@ -161,7 +204,7 @@ const AccountSettings = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-4 max-h-[550px] overflow-y-auto">
           {message && (
             <div className="bg-lib-primary/20 border border-lib-primary text-white rounded-md px-3 py-2 text-xs">
               {message}
@@ -175,6 +218,88 @@ const AccountSettings = ({ onClose }) => {
           {renderField('Data di Nascita', 'birthDate', 'date')}
           {renderField('Email', 'email', 'email')}
           {renderField('Numero Telefono', 'phone', 'tel')}
+
+          {/* Sezione Targhe */}
+          <div className="border-t border-lib-border pt-4 mt-4">
+            <h4 className="text-sm font-bold text-primary mb-3">Gestione Targhe</h4>
+            
+            {plateMessage && (
+              <div className={`rounded-md px-3 py-2 text-xs mb-3 ${
+                plateMessage.type === 'success' 
+                  ? 'bg-green-500/20 border border-green-500/30 text-green-400' 
+                  : 'bg-red-500/20 border border-red-500/30 text-red-400'
+              }`}>
+                {plateMessage.text}
+              </div>
+            )}
+
+            {/* Input per aggiungere targa */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                placeholder="AA123BB"
+                maxLength="7"
+                value={newPlate}
+                onChange={(e) => setNewPlate(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddPlate()}
+                className="flex-1 bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary font-mono"
+                title="Formato: 2 lettere, 3 numeri, 2 lettere"
+              />
+              <button
+                onClick={handleAddPlate}
+                className="px-3 py-2 bg-lib-primary text-on-primary rounded-md hover:opacity-90 transition-opacity text-sm font-medium"
+              >
+                Aggiungi
+              </button>
+            </div>
+
+            {/* Lista targhe */}
+            {user.licensePlates && user.licensePlates.length > 0 ? (
+              <div className="space-y-2">
+                {user.licensePlates.map(plate => (
+                  <div
+                    key={plate.id}
+                    className={`flex items-center justify-between p-3 rounded-md border ${
+                      plate.isSelected
+                        ? 'bg-lib-primary/20 border-lib-primary'
+                        : 'bg-lib-secondary border-lib-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <input
+                        type="radio"
+                        name="selectedPlate"
+                        checked={plate.isSelected}
+                        onChange={() => handleSelectPlate(plate.id)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className={`font-mono font-bold ${
+                        plate.isSelected ? 'text-lib-primary' : 'text-primary'
+                      }`}>
+                        {plate.plate}
+                      </span>
+                      {plate.isSelected && (
+                        <span className="text-xs text-lib-primary font-medium">✓ Attiva</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemovePlate(plate.id)}
+                      className="text-red-400 hover:text-red-300 transition-colors p-1"
+                      title="Rimuovi targa"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3 bg-lib-secondary border border-lib-border rounded-md text-center">
+                <p className="text-tertiary text-sm">Nessuna targa registrata</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 p-4 border-t border-lib-border">

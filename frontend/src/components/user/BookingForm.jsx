@@ -11,6 +11,8 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
   const [availableSpots, setAvailableSpots] = useState(null);
   const [dateTimeError, setDateTimeError] = useState('');
 
+  const selectedPlate = user.licensePlates?.find(p => p.isSelected);
+
   // Polling ogni 30 secondi per ricalcolare i posti disponibili (per prenotazioni scadute)
   useEffect(() => {
     if (!date) return;
@@ -144,6 +146,13 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Verifica che sia stata selezionata una targa
+    if (!selectedPlate) {
+      alert('⚠️ Errore: Devi selezionare una targa prima di prenotare.\n\nAccedi alle impostazioni del tuo account per aggiungere una targa.');
+      return;
+    }
+
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     const uniqueCode = `BS-${parking.id}-${Date.now().toString().slice(-4)}`;
     const price = calculatePrice();
@@ -157,11 +166,12 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
       duration: parseInt(duration),
       price: parseFloat(price),
       code: uniqueCode,
+      licensePlate: selectedPlate.plate,
       status: 'active'
     };
 
     mockApi.createBooking(newBooking);
-    alert(`Prenotazione confermata! Il tuo codice è: ${uniqueCode}\nTotale: €${price}`);
+    alert(`Prenotazione confermata! Il tuo codice è: ${uniqueCode}\nTarga: ${selectedPlate.plate}\nTotale: €${price}`);
     onSuccess();
   };
 
@@ -177,6 +187,18 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {!selectedPlate && (
+            <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30">
+              <p className="text-red-400 text-sm font-medium">⚠️ Devi selezionare una targa prima di prenotare. Accedi alle impostazioni per aggiungere una targa.</p>
+            </div>
+          )}
+
+          {selectedPlate && (
+            <div className="p-3 rounded-md bg-lib-primary/20 border border-lib-primary">
+              <p className="text-tertiary text-xs mb-1">Targa selezionata:</p>
+              <p className="text-lib-primary font-mono font-bold text-lg">{selectedPlate.plate}</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Data</label>
             <input 
@@ -310,17 +332,18 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
             </button>
             <button 
               type="submit" 
-              disabled={availableSpots === 0 || availableSpots === null || dateTimeError !== ''}
+              disabled={!selectedPlate || availableSpots === 0 || availableSpots === null || dateTimeError !== ''}
               className={`px-4 py-2 rounded-md shadow-sm transition-colors ${
-                availableSpots === null || availableSpots === 0 || dateTimeError !== ''
+                !selectedPlate || availableSpots === null || availableSpots === 0 || dateTimeError !== ''
                   ? 'bg-lib-secondary text-tertiary cursor-not-allowed'
                   : 'bg-lib-primary text-on-primary hover:opacity-90'
               }`}
             >
-              {dateTimeError && 'Data/Orario non valido'}
-              {!dateTimeError && availableSpots === 0 && 'Completo'}
-              {!dateTimeError && availableSpots !== 0 && availableSpots !== null && 'Conferma Prenotazione'}
-              {!dateTimeError && availableSpots === null && 'Seleziona data e orario'}
+              {!selectedPlate && 'Aggiungi una targa'}
+              {selectedPlate && dateTimeError && 'Data/Orario non valido'}
+              {selectedPlate && !dateTimeError && availableSpots === 0 && 'Completo'}
+              {selectedPlate && !dateTimeError && availableSpots !== 0 && availableSpots !== null && 'Conferma Prenotazione'}
+              {selectedPlate && !dateTimeError && availableSpots === null && 'Seleziona data e orario'}
             </button>
           </div>
         </form>
