@@ -285,9 +285,60 @@ export const mockApi = {
     };
   },
 
-  // Cancella una prenotazione
+  // Determina lo stato di una prenotazione: 'attiva', 'scaduta' o 'annullata'
+  getBookingStatus: (booking) => {
+    // Se è stata annullata dall'utente
+    if (booking.status === 'cancelled') {
+      return 'annullata';
+    }
+
+    // Calcola se la prenotazione è scaduta
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+    // Se è una data passata, è scaduta
+    if (booking.date < today) {
+      return 'scaduta';
+    }
+
+    // Se è oggi, controlla se il tempo di fine è passato
+    if (booking.date === today) {
+      const [bookingHour, bookingMinute] = booking.time.split(':').map(Number);
+      const bookingDuration = booking.duration || 1;
+      const bookingStartMinutes = bookingHour * 60 + bookingMinute;
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60) + 15; // +15 minuti di buffer
+
+      if (currentTotalMinutes >= bookingEndMinutes) {
+        return 'scaduta';
+      }
+    }
+
+    // Altrimenti è attiva
+    return 'attiva';
+  },
+
+  // Recupera le prenotazioni di un utente con lo stato calcolato
+  getBookingsByUserWithStatus: (userId) => {
+    const userBookings = bookings.filter(b => b.userId === userId);
+    return userBookings.map(booking => ({
+      ...booking,
+      displayStatus: mockApi.getBookingStatus(booking)
+    }));
+  },
+
+  // Cancella una prenotazione (la marca come annullata)
   deleteBooking: (bookingId) => {
-    bookings = bookings.filter(b => b.id !== bookingId);
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    
+    if (bookingIndex === -1) {
+      return { success: false, error: 'Prenotazione non trovata' };
+    }
+
+    // Marca come annullata invece di eliminarla
+    bookings[bookingIndex].status = 'cancelled';
     return { success: true };
   },
 

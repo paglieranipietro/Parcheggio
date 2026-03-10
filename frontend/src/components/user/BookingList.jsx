@@ -8,16 +8,19 @@ const BookingList = ({ refreshTrigger }) => {
   const [bookings, setBookings] = useState([]);
   const [searchCode, setSearchCode] = useState('');
   const [editingBookingId, setEditingBookingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('tutti'); // 'tutti', 'attiva', 'scaduta', 'annullata'
 
   useEffect(() => {
-    const userBookings = mockApi.getBookingsByUser(user.id);
+    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
     setBookings(userBookings);
   }, [user.id, refreshTrigger]);
 
   const handleCancel = (bookingId) => {
     if (window.confirm("Sei sicuro di voler cancellare la prenotazione?")) {
       mockApi.deleteBooking(bookingId);
-      setBookings(bookings.filter(b => b.id !== bookingId));
+      // Ricarica le prenotazioni da mockApi per mostrare lo stato aggiornato
+      const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
+      setBookings(userBookings);
     }
   };
 
@@ -28,7 +31,7 @@ const BookingList = ({ refreshTrigger }) => {
   const handleEditSuccess = () => {
     setEditingBookingId(null);
     // Ricarica le prenotazioni
-    const userBookings = mockApi.getBookingsByUser(user.id);
+    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
     setBookings(userBookings);
   };
 
@@ -36,9 +39,11 @@ const BookingList = ({ refreshTrigger }) => {
     setEditingBookingId(null);
   };
 
-  const filteredBookings = bookings.filter(booking =>
-    booking.code.toLowerCase().includes(searchCode.toLowerCase())
-  );
+  const filteredBookings = bookings.filter(booking => {
+    const matchesCode = booking.code.toLowerCase().includes(searchCode.toLowerCase());
+    const matchesStatus = statusFilter === 'tutti' || booking.displayStatus === statusFilter;
+    return matchesCode && matchesStatus;
+  });
 
   return (
     <div className="bg-lib-card rounded-lg shadow overflow-hidden border border-lib-border">
@@ -47,13 +52,25 @@ const BookingList = ({ refreshTrigger }) => {
           <h3 className="text-lg font-medium text-primary">Le tue Prenotazioni</h3>
           <span className="text-sm text-tertiary">{filteredBookings.length} di {bookings.length}</span>
         </div>
-        <input
-          type="text"
-          placeholder="Cerca per codice univoco..."
-          value={searchCode}
-          onChange={(e) => setSearchCode(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg bg-lib-card border border-lib-border text-primary placeholder-tertiary focus:outline-none focus:border-lib-primary transition-colors"
-        />
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Cerca per codice univoco..."
+            value={searchCode}
+            onChange={(e) => setSearchCode(e.target.value)}
+            className="flex-1 px-4 py-2 rounded-lg bg-lib-card border border-lib-border text-primary placeholder-tertiary focus:outline-none focus:border-lib-primary transition-colors"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 rounded-lg bg-lib-card border border-lib-border text-primary focus:outline-none focus:border-lib-primary transition-colors whitespace-nowrap"
+          >
+            <option value="tutti">Tutti gli stati</option>
+            <option value="attiva">Attive</option>
+            <option value="scaduta">Scadute</option>
+            <option value="annullata">Annullate</option>
+          </select>
+        </div>
       </div>
 
       {filteredBookings.length === 0 && searchCode ? (
@@ -74,6 +91,7 @@ const BookingList = ({ refreshTrigger }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Durata</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Targa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Prezzo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Stato</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-tertiary uppercase tracking-wider">Codice Univoco</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-tertiary uppercase tracking-wider">Azioni</th>
               </tr>
@@ -97,6 +115,20 @@ const BookingList = ({ refreshTrigger }) => {
                     €{booking.price?.toFixed(2) || '0.00'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border capitalize ${
+                      booking.displayStatus === 'attiva'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : booking.displayStatus === 'scaduta'
+                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                        : 'bg-red-500/20 text-red-400 border-red-500/30'
+                    }`}>
+                      {booking.displayStatus === 'attiva' && '🟢 '}
+                      {booking.displayStatus === 'scaduta' && '⏱️ '}
+                      {booking.displayStatus === 'annullata' && '❌ '}
+                      {booking.displayStatus}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-lib-primary/20 text-lib-primary border border-lib-primary/50 select-all font-mono">
                       {booking.code}
                     </span>
@@ -105,13 +137,23 @@ const BookingList = ({ refreshTrigger }) => {
                     <div className="flex gap-2 justify-end">
                       <button 
                         onClick={() => handleEditClick(booking.id)}
-                        className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                        disabled={booking.displayStatus !== 'attiva'}
+                        className={`font-medium transition-colors ${
+                          booking.displayStatus === 'attiva'
+                            ? 'text-blue-400 hover:text-blue-300'
+                            : 'text-gray-500 cursor-not-allowed opacity-50'
+                        }`}
                       >
                         Modifica
                       </button>
                       <button 
                         onClick={() => handleCancel(booking.id)}
-                        className="text-red-500 hover:text-red-400 font-medium transition-colors"
+                        disabled={booking.displayStatus === 'annullata'}
+                        className={`font-medium transition-colors ${
+                          booking.displayStatus !== 'annullata'
+                            ? 'text-red-500 hover:text-red-400'
+                            : 'text-gray-500 cursor-not-allowed opacity-50'
+                        }`}
                       >
                         Cancella
                       </button>
