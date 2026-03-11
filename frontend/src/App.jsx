@@ -1,3 +1,12 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Nota come qui usiamo "./" (punto singolo) perché App.jsx e la cartella "pages" 
