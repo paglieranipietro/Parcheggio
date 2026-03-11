@@ -1,34 +1,46 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import UserDashboard from './pages/UserDashboard';
-import { AuthProvider } from './context/AuthContext';
-
-function App() {
-  return (
-    <AuthProvider>
-      <UserDashboard />
-    </AuthProvider>
-  )
-import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import Register from './pages/Register';
 
-function App() {
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+function AppRoutes() {
+  const { user } = useAuth();
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+      <Route path="/register" element={<Register />} />
 
-// Nota come qui usiamo "./" (punto singolo) perché App.jsx e la cartella "pages" 
-// sono allo stesso livello dentro "src"
-import Register from '../pages/Register'; 
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+    </Routes>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Mostra il Register come pagina iniziale per farti testare la grafica */}
-        <Route path="/" element={<Register />} />
-      </Routes>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
