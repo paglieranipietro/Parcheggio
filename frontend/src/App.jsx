@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom'; // Rimosso BrowserRouter da qui
 import { AuthProvider, useAuth } from './context/AuthContext';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -39,11 +39,10 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    // Rimosso <BrowserRouter> da qui, lasciamo solo l'AuthProvider
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
