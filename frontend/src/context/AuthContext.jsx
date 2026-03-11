@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await loginRequest(email, password);
       if (response.data) {
+        // Aggiungiamo campi di default per la gestione del profilo se non esistono
         const userData = {
           ...response.data,
           licensePlates: response.data.licensePlates || [],
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // --- LOGICA ORIGINALE DELLE TARGHE E PROFILO ---
   const updateUser = (updatedData) => {
     setUser(prevUser => ({
       ...prevUser,

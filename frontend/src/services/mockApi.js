@@ -1,3 +1,4 @@
+// Dati iniziali di esempio
 let parkings = [
   { id: 1, name: "Parcheggio Vittoria", address: "Piazza della Vittoria, Brescia", totalSpots: 100, freeSpots: 42, co2: 150, hourlyRate: 1.40 },
   { id: 2, name: "Parcheggio Arnaldo", address: "Piazzale Arnaldo, Brescia", totalSpots: 80, freeSpots: 5, co2: 120, hourlyRate: 1.90 },
@@ -12,6 +13,7 @@ const USERS = [
   { id: 2, email: "studente@gmail.com", password: "user2026", role: "user", name: "Mario Rossi" },
 ];
 
+// ===== FUNZIONI HELPER (ESTERNE) =====
 const timeToMinutes = (timeStr) => {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
@@ -50,6 +52,7 @@ export const registerRequest = (name, email, password) => {
 };
 
 export const mockApi = {
+  // --- GESTIONE PARCHEGGI ---
   getParkings: () => [...parkings],
 
   addParking: (newParking) => {
@@ -81,6 +84,7 @@ export const mockApi = {
     };
   },
 
+  // --- GESTIONE PRENOTAZIONI (User Role) ---
   createBooking: (bookingData) => {
     const newBooking = {
       ...bookingData,
@@ -93,10 +97,126 @@ export const mockApi = {
     return newBooking;
   },
 
-  getBookingsByUser: (userId) => bookings.filter(b => b.userId === userId),
+  getBookingsByUser: (userId) => {
+    return bookings.filter(b => b.userId === userId);
+  },
+
+  getAvailableSpotsForDate: (parkingId, date, time = null) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    let targetHour = currentHour;
+    let targetMinute = currentMinute;
+
+    if (time) {
+      const [hour, minute] = time.split(':').map(Number);
+      targetHour = hour;
+      targetMinute = minute;
+    }
+
+    const bookingsForDate = bookings.filter(b => {
+      if (b.parkingId !== parkingId || b.date !== date || b.status !== 'active') return false;
+      if (date > today) return true;
+
+      if (date === today) {
+        const [bookingHour, bookingMinute] = b.time.split(':').map(Number);
+        const bookingDuration = b.duration || 1;
+        let endHour = bookingHour + bookingDuration;
+        let endMinute = bookingMinute + 15;
+
+        if (endMinute >= 60) {
+          endHour += Math.floor(endMinute / 60);
+          endMinute = endMinute % 60;
+        }
+
+        if (endHour >= 24) return false;
+
+        const targetTotalMinutes = targetHour * 60 + targetMinute;
+        const endTotalMinutes = endHour * 60 + endMinute;
+
+        return targetTotalMinutes < endTotalMinutes;
+      }
+      return false;
+    });
+
+    return parking.totalSpots - bookingsForDate.length;
+  },
+
+  getAvailableSpotsForDateTime: (parkingId, date, time, duration = 1) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    const requestedStartMinutes = time ? timeToMinutes(time) : 0;
+    const requestedEndMinutes = requestedStartMinutes + (duration * 60);
+
+    const requestedInterval = { start: requestedStartMinutes, end: requestedEndMinutes };
+
+    const bookingsForDate = bookings.filter(b => b.parkingId === parkingId && b.date === date && b.status === 'active');
+
+    const overlappingBookings = bookingsForDate.filter(b => {
+      const bookingStartMinutes = timeToMinutes(b.time);
+      const bookingDuration = b.duration || 1;
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60) + 15;
+      const bookingInterval = { start: bookingStartMinutes, end: bookingEndMinutes };
+      return intervalsOverlap(requestedInterval, bookingInterval);
+    });
+
+    return Math.max(0, parking.totalSpots - overlappingBookings.length);
+  },
+
+  getBookingById: (bookingId) => bookings.find(b => b.id === bookingId),
+
+  checkSlotAvailability: (parkingId, date, time, duration = 1, excludeBookingId = null) => {
+    const parking = parkings.find(p => p.id === parkingId);
+    if (!parking) return 0;
+
+    const requestedStartMinutes = time ? timeToMinutes(time) : 0;
+    const requestedEndMinutes = requestedStartMinutes + (duration * 60);
+    const requestedInterval = { start: requestedStartMinutes, end: requestedEndMinutes };
+
+    const bookingsForDate = bookings.filter(b => b.parkingId === parkingId && b.date === date && b.status === 'active' && b.id !== excludeBookingId);
+
+    const overlappingBookings = bookingsForDate.filter(b => {
+      const bookingStartMinutes = timeToMinutes(b.time);
+      const bookingDuration = b.duration || 1;
+      const bookingEndMinutes = bookingStartMinutes + (bookingDuration * 60) + 15;
+      const bookingInterval = { start: bookingStartMinutes, end: bookingEndMinutes };
+      return intervalsOverlap(requestedInterval, bookingInterval);
+    });
+
+    return {
+      available: overlappingBookings.length < parking.totalSpots,
+      freeSpots: Math.max(0, parking.totalSpots - overlappingBookings.length),
+      totalSpots: parking.totalSpots,
+      occupiedSpots: overlappingBookings.length
+    };
+  },
+
+  updateBooking: (bookingId, updateData) => {
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) return { success: false, error: 'Prenotazione non trovata' };
+
+    const existingBooking = bookings[bookingIndex];
+
+    if (updateData.date !== existingBooking.date || updateData.time !== existingBooking.time || updateData.duration !== existingBooking.duration) {
+      const availability = mockApi.checkSlotAvailability(existingBooking.parkingId, updateData.date, updateData.time, updateData.duration, bookingId);
+      if (!availability.available) {
+        return { success: false, error: 'Slot non disponibile. Posti liberi: ' + availability.freeSpots + '/' + availability.totalSpots };
+      }
+    }
+
+    bookings[bookingIndex] = { ...existingBooking, ...updateData, updatedAt: new Date().toISOString() };
+    return { success: true, booking: bookings[bookingIndex] };
+  },
 
   getBookingStatus: (booking) => {
     if (booking.status === 'cancelled') return 'annullata';
+
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
     const currentHour = now.getHours();
@@ -105,7 +225,7 @@ export const mockApi = {
 
     if (booking.date < today) return 'scaduta';
 
-    if (booking.date === today && booking.time) {
+    if (booking.date === today) {
       const [bookingHour, bookingMinute] = booking.time.split(':').map(Number);
       const bookingDuration = booking.duration || 1;
       const bookingStartMinutes = bookingHour * 60 + bookingMinute;
@@ -113,6 +233,7 @@ export const mockApi = {
 
       if (currentTotalMinutes >= bookingEndMinutes) return 'scaduta';
     }
+
     return 'attiva';
   },
 
@@ -124,20 +245,10 @@ export const mockApi = {
     }));
   },
 
-  getBookingById: (bookingId) => bookings.find(b => b.id === bookingId),
-
-  updateBooking: (bookingId, updateData) => {
-    const index = bookings.findIndex(b => b.id === bookingId);
-    if (index === -1) return { success: false, error: 'Prenotazione non trovata' };
-
-    bookings[index] = { ...bookings[index], ...updateData, updatedAt: new Date().toISOString() };
-    return { success: true, booking: bookings[index] };
-  },
-
   deleteBooking: (bookingId) => {
-    const index = bookings.findIndex(b => b.id === bookingId);
-    if (index === -1) return { success: false, error: 'Prenotazione non trovata' };
-    bookings[index].status = 'cancelled';
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) return { success: false, error: 'Prenotazione non trovata' };
+    bookings[bookingIndex].status = 'cancelled';
     return { success: true };
   }
 };
