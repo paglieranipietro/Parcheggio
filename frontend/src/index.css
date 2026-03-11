@@ -9,10 +9,73 @@
   --color-lib-card: #16161e;
   --color-lib-border: #2a2a35;
   --color-lib-primary: #8b5cf6;
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --text-on-primary: #ffffff;
 }
 
 @layer base {
   body {
-    @apply bg-[var(--color-lib-dark)] text-white;
+    @apply bg-[var(--color-lib-dark)] transition-colors duration-300;
+    color: var(--text-primary);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .text-primary {
+    @apply transition-colors duration-300;
+    color: var(--text-primary);
+  }
+  
+  .text-secondary {
+    @apply transition-colors duration-300;
+    color: var(--text-secondary);
+  }
+  
+  .text-tertiary {
+    @apply transition-colors duration-300;
+    color: var(--text-tertiary);
+  }
+
+  .text-on-primary {
+    @apply transition-colors duration-300;
+    color: var(--text-on-primary);
+  }
+  
+  .bg-lib-dark {
+    @apply transition-colors duration-300;
+    background-color: var(--color-lib-dark);
+  }
+  
+  .bg-lib-card {
+    @apply transition-colors duration-300;
+    background-color: var(--color-lib-card);
+  }
+  
+  .bg-lib-secondary {
+    @apply transition-colors duration-300;
+    background-color: var(--color-lib-secondary);
+  }
+  
+  .border-lib-border {
+    @apply transition-colors duration-300;
+    border-color: var(--color-lib-border);
+  }
+
+  /* Icone bianche per input date e time */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-inner-spin-button {
+    filter: invert(1);
   }
 }
