@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockApi } from '../../services/mockApi';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import EditBookingForm from './EditBookingForm';
 
 const BookingList = ({ refreshTrigger }) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [searchCode, setSearchCode] = useState('');
   const [editingBookingId, setEditingBookingId] = useState(null);

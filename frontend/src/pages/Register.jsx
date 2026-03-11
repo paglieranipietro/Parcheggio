@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import RegisterForm from '../components/auth/RegisterForm';
-import { mockApi } from '../services/mockApi';
+import RegisterForm from '../../components/auth/RegisterForm';
+import { mockApi } from '../../services/mockApi';
 
 const Register = () => {
   const [error, setError] = useState('');
@@ -11,7 +11,7 @@ const Register = () => {
   const handleRegister = async (userData) => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       console.log('Registrazione in corso...');
       await mockApi.register(userData);

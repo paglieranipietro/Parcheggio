@@ -1,8 +1,8 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const AccountSettings = ({ onClose }) => {
-  const { user, updateUser, addLicensePlate, removeLicensePlate, selectLicensePlate } = useContext(AuthContext);
+  const { user, updateUser, addLicensePlate, removeLicensePlate, selectLicensePlate } = useAuth();
   const [editData, setEditData] = useState({
     name: user?.name || '',
     surname: user?.surname || '',

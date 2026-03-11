@@ -1,9 +1,9 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockApi } from '../../services/mockApi';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const BookingForm = ({ parking, onSuccess, onCancel }) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [date, setDate] = useState('');
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');

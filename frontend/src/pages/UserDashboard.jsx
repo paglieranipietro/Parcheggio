@@ -1,13 +1,13 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import ParkingList from '../components/user/ParkingList';
 import BookingList from '../components/user/BookingList';
 import BookingForm from '../components/user/BookingForm';
 import AccountSettings from '../components/user/AccountSettings';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const UserDashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [selectedParking, setSelectedParking] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [refreshBookings, setRefreshBookings] = useState(0);
