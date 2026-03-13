@@ -27,6 +27,11 @@ export default function ParkingTable({ selectedParking }) {
                     </div>
                 ))}
             </div>
+
+            {/* Sezione info parcheggio selezionato */}
+            <div className="mt-8 bg-lib-secondary rounded-lg border border-lib-border p-6 min-h-[80px] flex items-center justify-center">
+                <span className="text-tertiary text-center text-lg font-semibold">Statistiche non disponibili...</span>
+            </div>
         </div>
     );
 }
