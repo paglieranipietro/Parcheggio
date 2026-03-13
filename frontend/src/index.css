@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Definiamo i colori */
+  /* Colori Dark Mode */
   --color-lib-dark: #0f0f14;
   --color-lib-secondary: #1a1a24;
   --color-lib-card: #16161e;
@@ -12,6 +12,19 @@
   --text-primary: #ffffff;
   --text-secondary: #d1d5db;
   --text-tertiary: #9ca3af;
+  --text-on-primary: #ffffff;
+}
+
+:root[data-theme="light"] {
+  /* Colori Light Mode */
+  --color-lib-dark: #fafafa;
+  --color-lib-secondary: #f3f4f6;
+  --color-lib-card: #ffffff;
+  --color-lib-border: #e5e7eb;
+  --color-lib-primary: #8b5cf6;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #6b7280;
   --text-on-primary: #ffffff;
 }
 
@@ -67,15 +80,22 @@
     border-color: var(--color-lib-border);
   }
 
-  /* Icone bianche per input date e time */
-  input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator {
+  /* Icone per input date e time - Dark mode */
+  :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+  :root[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
   }
 
-  input[type="date"]::-webkit-inner-spin-button,
-  input[type="time"]::-webkit-inner-spin-button {
+  :root[data-theme="dark"] input[type="date"]::-webkit-inner-spin-button,
+  :root[data-theme="dark"] input[type="time"]::-webkit-inner-spin-button {
     filter: invert(1);
+  }
+
+  /* Icone per input date e time - Light mode (no filter) */
+  :root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+  :root[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: none;
+    cursor: pointer;
   }
 }
