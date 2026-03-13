@@ -10,7 +10,7 @@ let bookings = [];
 
 const USERS = [
   { id: 1, email: "admin@brescia.it", password: "password123", role: "admin", name: "Responsabile Brescia" },
-  { id: 2, email: "studente@gmail.com", password: "user2026", role: "user", name: "Mario Rossi" },
+  { id: 2, email: "studente@gmail.com", password: "user2026", role: "user", name: "Mario" },
 ];
 
 // ===== FUNZIONI HELPER (ESTERNE) =====

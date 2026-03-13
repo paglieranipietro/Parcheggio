@@ -88,40 +88,40 @@ export default function ParkingForm() {
     return (
         <div className="flex gap-6 w-full">
             {/* Colonna Sinistra: Gestione Parcheggi */}
-            <div className="w-96 bg-white rounded-lg shadow-md p-6 flex flex-col">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestione Parcheggi</h2>
+            <div className="w-96 bg-lib-card rounded-lg shadow p-6 flex flex-col border border-lib-border transition-colors duration-300">
+                <h2 className="text-2xl font-bold text-primary mb-6">Gestione Parcheggi</h2>
 
                 {/* Elenco parcheggi */}
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-gray-700">Parcheggi</h3>
+                        <h3 className="text-lg font-semibold text-secondary">Parcheggi</h3>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 text-sm"
+                                className="bg-green-500 hover:bg-green-600 text-on-primary font-semibold py-1 px-3 rounded-lg transition-colors duration-200 text-sm"
                             >
                                 + Aggiungi
                             </button>
                             <button
                                 onClick={() => setShowRemoveModal(true)}
-                                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 text-sm"
+                                className="bg-red-500 hover:bg-red-600 text-on-primary font-semibold py-1 px-3 rounded-lg transition-colors duration-200 text-sm"
                             >
                                 - Rimuovi
                             </button>
                         </div>
                     </div>
-                    <div className="border border-gray-300 rounded-lg bg-gray-50 overflow-y-auto h-52">
+                    <div className="border border-lib-border rounded-lg bg-lib-secondary overflow-y-auto h-52">
                         {parkings.length === 0 ? (
-                            <p className="text-gray-400 text-center py-8 text-sm">Nessun parcheggio aggiunto</p>
+                            <p className="text-tertiary text-center py-8 text-sm">Nessun parcheggio aggiunto</p>
                         ) : (
                             <ul className="block">
                                 {parkings.map(parking => (
                                     <li
                                         key={parking.id}
                                         onClick={() => setSelectedParking(parking)}
-                                        className={`block px-4 py-3 border-b border-gray-200 text-sm cursor-pointer transition-colors ${selectedParking?.id === parking.id
-                                                ? 'bg-blue-100 text-blue-900 font-medium'
-                                                : 'text-gray-700 hover:bg-gray-100'
+                                        className={`block px-4 py-3 border-b border-lib-border text-sm cursor-pointer transition-colors ${selectedParking?.id === parking.id
+                                                ? 'bg-lib-primary text-on-primary font-medium'
+                                                : 'text-secondary hover:bg-lib-card'
                                             }`}
                                     >
                                         {parking.name}
@@ -135,28 +135,28 @@ export default function ParkingForm() {
                 {/* Modal Aggiungi Parcheggio */}
                 {showAddModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowAddModal(false)}>
-                        <div className="bg-white rounded-lg p-8 max-w-md w-11/12 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                            <h3 className="text-xl font-bold text-gray-800 mb-6">Aggiungi Nuovo Parcheggio</h3>
+                        <div className="bg-lib-card rounded-lg p-8 max-w-md w-11/12 shadow-xl border border-lib-border" onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold text-primary mb-6">Aggiungi Nuovo Parcheggio</h3>
                             <form onSubmit={handleAddParking} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nome Parcheggio *</label>
-                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Nome Parcheggio *</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Numero Posti Massimi *</label>
-                                    <input type="number" name="maxSpots" value={formData.maxSpots} onChange={handleInputChange} min="1" className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Numero Posti Massimi *</label>
+                                    <input type="number" name="maxSpots" value={formData.maxSpots} onChange={handleInputChange} min="1" className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Indirizzo *</label>
-                                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Indirizzo *</label>
+                                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Tariffa Oraria (€) *</label>
-                                    <input type="number" name="hourlyRate" value={formData.hourlyRate} onChange={handleInputChange} step="0.01" min="0" className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Tariffa Oraria (€) *</label>
+                                    <input type="number" name="hourlyRate" value={formData.hourlyRate} onChange={handleInputChange} step="0.01" min="0" className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button type="submit" className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">Aggiungi</button>
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg">Annulla</button>
+                                    <button type="submit" className="flex-1 bg-green-500 hover:bg-green-600 text-on-primary font-semibold py-2 px-4 rounded-lg">Aggiungi</button>
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-on-primary font-semibold py-2 px-4 rounded-lg">Annulla</button>
                                 </div>
                             </form>
                         </div>
@@ -166,12 +166,12 @@ export default function ParkingForm() {
                 {/* Modal Rimuovi Parcheggio */}
                 {showRemoveModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowRemoveModal(false)}>
-                        <div className="bg-white rounded-lg p-8 max-w-md w-11/12 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                            <h3 className="text-xl font-bold text-gray-800 mb-6">Rimuovi Parcheggio</h3>
+                        <div className="bg-lib-card rounded-lg p-8 max-w-md w-11/12 shadow-xl border border-lib-border" onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold text-primary mb-6">Rimuovi Parcheggio</h3>
                             <form onSubmit={handleRemoveParking} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Seleziona Parcheggio *</label>
-                                    <select value={selectedParkingToRemove} onChange={(e) => setSelectedParkingToRemove(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Seleziona Parcheggio *</label>
+                                    <select value={selectedParkingToRemove} onChange={(e) => setSelectedParkingToRemove(e.target.value)} className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required>
                                         <option value="">-- Seleziona un parcheggio --</option>
                                         {parkings.map(parking => (
                                             <option key={parking.id} value={parking.id}>{parking.name}</option>
@@ -179,8 +179,8 @@ export default function ParkingForm() {
                                     </select>
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button type="submit" className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg">Rimuovi</button>
-                                    <button type="button" onClick={() => setShowRemoveModal(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg">Annulla</button>
+                                    <button type="submit" className="flex-1 bg-red-500 hover:bg-red-600 text-on-primary font-semibold py-2 px-4 rounded-lg">Rimuovi</button>
+                                    <button type="button" onClick={() => setShowRemoveModal(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-on-primary font-semibold py-2 px-4 rounded-lg">Annulla</button>
                                 </div>
                             </form>
                         </div>

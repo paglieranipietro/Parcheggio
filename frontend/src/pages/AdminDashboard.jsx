@@ -12,16 +12,16 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col p-6">
+        <div className="min-h-screen bg-lib-dark flex flex-col p-6">
             {/* Intestazione (Header) per l'Admin */}
-            <div className="flex justify-between items-center mb-6 bg-white rounded-lg shadow-md p-4 w-full">
+            <div className="flex justify-between items-center mb-6 bg-lib-card rounded-lg shadow border border-lib-border p-4 w-full transition-colors duration-300">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Pannello Amministratore</h1>
-                    <p className="text-gray-500 text-sm">Sistema di Gestione Parcheggi - Ciao, {user?.name}</p>
+                    <h1 className="text-2xl font-bold text-primary">Pannello Amministratore</h1>
+                    <p className="text-secondary text-sm">Sistema di Gestione Parcheggi - Ciao, {user?.name}</p>
                 </div>
                 <button
                     onClick={logout}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                    className="bg-red-500 hover:bg-red-600 text-on-primary font-bold py-2 px-6 rounded-lg transition-colors duration-200"
                 >
                     Esci
                 </button>
