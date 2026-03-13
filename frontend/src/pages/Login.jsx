@@ -19,8 +19,8 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-lib-secondary">
       <div className="max-w-md w-full bg-lib-card p-8 rounded-lg shadow-lg border border-lib-border">
-        <h1 className="text-2xl font-bold mb-2 text-lib-primary">Benvenuto in Brescia Parking</h1>
-        <p className="text-gray-300 mb-6">Ottimizza il tuo percorso, riduci le emissioni.</p>
+        <h1 className="text-2xl font-bold mb-2 text-lib-primary text-center">Benvenuto in Brescia Parking</h1>
+        <p className="text-gray-300 mb-6 text-center">Ottimizza il tuo percorso, riduci le emissioni.</p>
 
         <LoginForm onLoginSuccess={handleRedirect} />
 
