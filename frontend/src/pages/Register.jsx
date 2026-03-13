@@ -47,7 +47,7 @@ const Register = () => {
 
       <div className="w-full max-w-xl bg-lib-card border border-lib-border rounded-2xl p-6">
         <div className="text-center mb-5">
-          <h2 className="text-3xl font-bold text-white mb-2">
+          <h2 className="text-3xl font-bold mb-2 text-lib-primary">
             Unisciti a noi
           </h2>
           <p className="text-gray-400 text-sm">
