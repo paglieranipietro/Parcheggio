@@ -43,7 +43,6 @@ const Register = () => {
           <Link to="/login" className="text-lib-primary hover:text-purple-400 font-medium transition-colors">
             Accedi qui
           </Link>
-          {' '}oppure <Link to="/" className="text-lib-primary hover:text-purple-400 font-medium transition-colors">torna indietro</Link>
         </div>
       </div>
     </div>
