@@ -51,9 +51,9 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
     });
   };
 
-  // Funzione per ottenere la prenotazione attiva per un parcheggio
-  const getActiveBooking = (parkingId) => {
-    return activeBookings.find(b => b.parkingId === parkingId);
+  // Funzione per ottenere tutte le prenotazioni attive per un parcheggio
+  const getActiveBookingsForParking = (parkingId) => {
+    return activeBookings.filter(b => b.parkingId === parkingId);
   };
 
   return (
@@ -82,7 +82,8 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
         />
         
         {parkings?.map((parking) => {
-          const activeBooking = getActiveBooking(parking.id);
+          const parkingBookings = getActiveBookingsForParking(parking.id);
+          const hasBookings = parkingBookings.length > 0;
           
           return (
           <Marker 
@@ -91,39 +92,30 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
             icon={getMarkerIcon(parking.id)}
           >
             <Popup>
-              <div className="p-2 min-w-64">
+              <div className="p-2 min-w-72">
                 <h4 className="font-bold text-lg text-gray-800 mb-1">{parking.name}</h4>
                 <p className="text-sm text-gray-600 mb-2">{parking.address}</p>
                 
-                {/* Se c'è una prenotazione attiva, mostra i dettagli */}
-                {activeBooking ? (
+                {/* Se ci sono prenotazioni attive, mostra il riepilogo */}
+                {hasBookings ? (
                   <div className="bg-green-50 p-3 rounded mb-3 border-2 border-green-500">
-                    <h5 className="font-semibold text-green-700 mb-2">✅ Prenotazione Attiva</h5>
-                    <div className="space-y-1 text-xs text-gray-700">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Codice:</span>
-                        <span className="font-mono font-bold text-green-600">{activeBooking.code}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Data:</span>
-                        <span className="font-semibold">{activeBooking.date}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ora:</span>
-                        <span className="font-semibold">{activeBooking.time}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Durata:</span>
-                        <span className="font-semibold">{activeBooking.duration}h</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Targa:</span>
-                        <span className="font-mono font-bold">{activeBooking.licensePlate}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Totale:</span>
-                        <span className="font-bold text-green-600">€{activeBooking.price.toFixed(2)}</span>
-                      </div>
+                    <h5 className="font-semibold text-green-700 mb-2">✅ Prenotazioni Attive ({parkingBookings.length})</h5>
+                    <div className="space-y-2">
+                      {parkingBookings.map((booking, idx) => (
+                        <div key={idx} className="bg-white p-2 rounded text-xs border border-green-200">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">
+                              📍 {booking.date} • {booking.time}
+                            </span>
+                            <span className="font-mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                              {booking.code}
+                            </span>
+                          </div>
+                          <div className="text-gray-700 mt-1">
+                            <span className="font-mono">{booking.licensePlate}</span> • {booking.duration}h • €{booking.price.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : (
@@ -143,14 +135,12 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
                   </div>
                 )}
                 
-                {!activeBooking && (
-                  <button 
-                    onClick={() => onSelectParking(parking)}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-3 rounded text-sm transition-colors"
-                  >
-                    Prenota Posto
-                  </button>
-                )}
+                <button 
+                  onClick={() => onSelectParking(parking)}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-3 rounded text-sm transition-colors"
+                >
+                  {hasBookings ? '➕ Aggiungi Prenotazione' : 'Prenota Posto'}
+                </button>
               </div>
             </Popup>
           </Marker>
