@@ -1,9 +1,9 @@
 // Dati iniziali di esempio
 let parkings = [
-  { id: 1, name: "Parcheggio Vittoria", address: "Piazza della Vittoria, Brescia", totalSpots: 100, freeSpots: 42, co2: 150, hourlyRate: 1.40 },
-  { id: 2, name: "Parcheggio Arnaldo", address: "Piazzale Arnaldo, Brescia", totalSpots: 80, freeSpots: 5, co2: 120, hourlyRate: 1.90 },
-  { id: 3, name: "Parcheggio Stazione", address: "Viale della Stazione, Brescia", totalSpots: 50, freeSpots: 10, co2: 200, hourlyRate: 1.10 },
-  { id: 4, name: "Parcheggio Brescia Due", address: "Via Brescia Due, Brescia", totalSpots: 60, freeSpots: 25, co2: 90, hourlyRate: 0.80 }
+  { id: 1, name: "Parcheggio Vittoria", address: "Piazza della Vittoria, Brescia", totalSpots: 100, freeSpots: 42, co2: 150, hourlyRate: 1.40, lat: 45.5416, lng: 10.2227 },
+  { id: 2, name: "Parcheggio Arnaldo", address: "Piazzale Arnaldo, Brescia", totalSpots: 80, freeSpots: 5, co2: 120, hourlyRate: 1.90, lat: 45.5381, lng: 10.2230 },
+  { id: 3, name: "Parcheggio Stazione", address: "Viale della Stazione, Brescia", totalSpots: 50, freeSpots: 10, co2: 200, hourlyRate: 1.10, lat: 45.5336, lng: 10.2138 },
+  { id: 4, name: "Parcheggio Brescia Due", address: "Via Brescia Due, Brescia", totalSpots: 60, freeSpots: 25, co2: 90, hourlyRate: 0.80, lat: 45.5270, lng: 10.2150 }
 ];
 
 let bookings = [];
