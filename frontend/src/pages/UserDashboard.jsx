@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
 import ParkingList from '../components/user/ParkingList';
 import BookingList from '../components/user/BookingList';
 import BookingForm from '../components/user/BookingForm';
 import AccountSettings from '../components/user/AccountSettings';
+import ParkingMap from '../components/map/ParkingMap';
 import { useAuth } from '../context/AuthContext';
+import { mockApi } from '../services/mockApi';
 
 const UserDashboard = () => {
   const { user } = useAuth();
   const [selectedParking, setSelectedParking] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [refreshBookings, setRefreshBookings] = useState(0);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [parkings, setParkings] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [focusParkingId, setFocusParkingId] = useState(null);
+
+  useEffect(() => {
+    const data = mockApi.getParkings();
+    setParkings(data);
+    
+    // Carica le prenotazioni dell'utente
+    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
+    setBookings(userBookings);
+  }, [user.id, refreshBookings]);
 
   const handleOpenBooking = (parking) => {
     setSelectedParking(parking);
@@ -25,9 +40,19 @@ const UserDashboard = () => {
     setSelectedParking(null);
   };
 
+  const handleOpenSettings = () => {
+    setShowSettings(true);
+  };
+
+  const handleFocusOnParking = (parkingId) => {
+    setFocusParkingId(parkingId);
+    // Reset dopo 100ms per permettere l'effetto di nuovo
+    setTimeout(() => setFocusParkingId(null), 100);
+  };
+
   return (
     <div className="min-h-screen bg-lib-dark flex flex-col">
-      <Header title="Green Parking Brescia" user={user} onOpenSettings={() => setShowSettings(true)} />
+      <Header title="Green Parking Brescia" user={user} onOpenSettings={handleOpenSettings} />
       
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -47,7 +72,26 @@ const UserDashboard = () => {
 
         {/* Sezione Ricerca Parcheggio */}
         <section>
-          <ParkingList onSelectParking={handleOpenBooking} refreshTrigger={refreshBookings} />
+          <h3 className="text-xl font-semibold text-primary mb-4">
+            Parcheggi Disponibili a Brescia
+          </h3>
+          
+          {/* Mappa */}
+          <div className="mb-8">
+            <ParkingMap 
+              parkings={parkings} 
+              activeBookings={bookings.filter(b => b.displayStatus === 'attiva')}
+              onSelectParking={handleOpenBooking} 
+              onFullscreen={() => setIsMapFullscreen(true)}
+              focusParkingId={focusParkingId}
+            />
+          </div>
+          
+          <ParkingList 
+            onSelectParking={handleOpenBooking} 
+            onFocusParking={handleFocusOnParking}
+            refreshTrigger={refreshBookings} 
+          />
         </section>
 
         {/* Modale */}
@@ -62,6 +106,24 @@ const UserDashboard = () => {
         {/* Impostazioni Account */}
         {showSettings && (
           <AccountSettings onClose={() => setShowSettings(false)} />
+        )}
+
+        {/* Modale Mappa Fullscreen */}
+        {isMapFullscreen && (
+          <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+            <div className="flex justify-between items-center p-4 bg-lib-secondary border-b border-lib-border">
+              <h2 className="text-xl font-bold text-primary">Mappa Parcheggi Brescia</h2>
+              <button 
+                onClick={() => setIsMapFullscreen(false)}
+                className="text-2xl text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-grow">
+              <ParkingMap parkings={parkings} onSelectParking={handleOpenBooking} isFullscreen={true} />
+            </div>
+          </div>
         )}
       </main>
     </div>
