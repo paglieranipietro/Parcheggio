@@ -1,5 +1,6 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import '../../../node_modules/leaflet/dist/leaflet.css';
 
@@ -11,7 +12,133 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFullscreen, isFullscreen = false }) => {
+// Componente helper per il focus sulla mappa
+const MapFocusHandler = ({ parkings, focusParkingId }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (focusParkingId) {
+      const parking = parkings.find(p => p.id === focusParkingId);
+      if (parking) {
+        map.flyTo([parking.lat, parking.lng], 17, {
+          duration: 1.5,
+          easeLinearity: 0.5
+        });
+      }
+    }
+  }, [focusParkingId, parkings, map]);
+
+  return null;
+};
+
+// Componente interno che contiene il marker e usa getMap
+const ParkingMarker = ({ parking, icon, parkingBookings, onSelectParking, hasBookings }) => {
+  const map = useMap();
+  
+  const handleFocus = () => {
+    // flyTo con animazione al marker
+    map.flyTo([parking.lat, parking.lng], 17, {
+      duration: 1.5,
+      easeLinearity: 0.5
+    });
+  };
+
+  return (
+    <Marker 
+      position={[parking.lat, parking.lng]}
+      icon={icon}
+    >
+      <Popup>
+        <div style={{ minWidth: '300px', padding: '8px' }}>
+          <h4 style={{ fontWeight: 'bold', fontSize: '16px', color: '#1f2937', marginBottom: '4px' }}>{parking.name}</h4>
+          <p style={{ fontSize: '14px', color: '#4b5563', marginBottom: '8px' }}>{parking.address}</p>
+          
+          {/* Se ci sono prenotazioni attive, mostra il riepilogo */}
+          {hasBookings ? (
+            <div style={{ backgroundColor: '#f0fdf4', padding: '12px', borderRadius: '6px', marginBottom: '12px', border: '2px solid #22c55e' }}>
+              <h5 style={{ fontWeight: '600', color: '#15803d', marginBottom: '8px' }}>✅ Prenotazioni Attive ({parkingBookings.length})</h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {parkingBookings.map((booking, idx) => (
+                  <div key={idx} style={{ backgroundColor: 'white', padding: '8px', borderRadius: '4px', fontSize: '12px', border: '1px solid #dcfce7' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#4b5563' }}>
+                        📍 {booking.date} • {booking.time}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', backgroundColor: '#dcfce7', color: '#15803d', padding: '4px 8px', borderRadius: '4px' }}>
+                        {booking.code}
+                      </span>
+                    </div>
+                    <div style={{ color: '#374151', marginTop: '4px' }}>
+                      <span style={{ fontFamily: 'monospace' }}>{booking.licensePlate}</span> • {booking.duration}h • €{booking.price.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#f3f4f6', padding: '8px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                <span style={{ color: '#4b5563' }}>Posti disponibili:</span>
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{parking.freeSpots}/{parking.totalSpots}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                <span style={{ color: '#4b5563' }}>Tariffa:</span>
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>€{parking.hourlyRate.toFixed(2)}/h</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                <span style={{ color: '#4b5563' }}>CO2 Risparmiata:</span>
+                <span style={{ fontWeight: '600', color: '#22c55e' }}>-{parking.co2}g</span>
+              </div>
+            </div>
+          )}
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={() => onSelectParking(parking)}
+              style={{
+                flex: 1,
+                backgroundColor: '#a855f7',
+                color: 'white',
+                fontWeight: '600',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#9333ea'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#a855f7'}
+            >
+              {hasBookings ? '➕ Aggiungi' : 'Prenota'}
+            </button>
+            <button 
+              onClick={handleFocus}
+              style={{
+                backgroundColor: '#2563eb',
+                color: 'white',
+                fontWeight: '600',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
+              title="Focus su questo parcheggio"
+            >
+              🗺️
+            </button>
+          </div>
+        </div>
+      </Popup>
+    </Marker>
+  );
+};
+
+const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFullscreen, focusParkingId, isFullscreen = false }) => {
   // Centro su Brescia
   const center = [45.5384, 10.2116];
   const zoom = 14;
@@ -81,70 +208,22 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
           maxZoom={19}
         />
         
+        <MapFocusHandler parkings={parkings} focusParkingId={focusParkingId} />
+        
         {parkings?.map((parking) => {
           const parkingBookings = getActiveBookingsForParking(parking.id);
           const hasBookings = parkingBookings.length > 0;
           
           return (
-          <Marker 
-            key={parking.id} 
-            position={[parking.lat, parking.lng]}
-            icon={getMarkerIcon(parking.id)}
-          >
-            <Popup>
-              <div className="p-2 min-w-72">
-                <h4 className="font-bold text-lg text-gray-800 mb-1">{parking.name}</h4>
-                <p className="text-sm text-gray-600 mb-2">{parking.address}</p>
-                
-                {/* Se ci sono prenotazioni attive, mostra il riepilogo */}
-                {hasBookings ? (
-                  <div className="bg-green-50 p-3 rounded mb-3 border-2 border-green-500">
-                    <h5 className="font-semibold text-green-700 mb-2">✅ Prenotazioni Attive ({parkingBookings.length})</h5>
-                    <div className="space-y-2">
-                      {parkingBookings.map((booking, idx) => (
-                        <div key={idx} className="bg-white p-2 rounded text-xs border border-green-200">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">
-                              📍 {booking.date} • {booking.time}
-                            </span>
-                            <span className="font-mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                              {booking.code}
-                            </span>
-                          </div>
-                          <div className="text-gray-700 mt-1">
-                            <span className="font-mono">{booking.licensePlate}</span> • {booking.duration}h • €{booking.price.toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 p-2 rounded mb-3 border border-gray-200">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Posti disponibili:</span>
-                      <span className="font-semibold text-gray-800">{parking.freeSpots}/{parking.totalSpots}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Tariffa:</span>
-                      <span className="font-semibold text-gray-800">€{parking.hourlyRate.toFixed(2)}/h</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">CO2 Risparmiata:</span>
-                      <span className="font-semibold text-green-600">-{parking.co2}g</span>
-                    </div>
-                  </div>
-                )}
-                
-                <button 
-                  onClick={() => onSelectParking(parking)}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-3 rounded text-sm transition-colors"
-                >
-                  {hasBookings ? '➕ Aggiungi Prenotazione' : 'Prenota Posto'}
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        );
+            <ParkingMarker 
+              key={parking.id}
+              parking={parking}
+              icon={getMarkerIcon(parking.id)}
+              parkingBookings={parkingBookings}
+              onSelectParking={onSelectParking}
+              hasBookings={hasBookings}
+            />
+          );
         })}
         ))}
       </MapContainer>

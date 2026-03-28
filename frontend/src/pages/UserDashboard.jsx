@@ -16,6 +16,7 @@ const UserDashboard = () => {
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [parkings, setParkings] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [focusParkingId, setFocusParkingId] = useState(null);
 
   useEffect(() => {
     const data = mockApi.getParkings();
@@ -41,6 +42,12 @@ const UserDashboard = () => {
 
   const handleOpenSettings = () => {
     setShowSettings(true);
+  };
+
+  const handleFocusOnParking = (parkingId) => {
+    setFocusParkingId(parkingId);
+    // Reset dopo 100ms per permettere l'effetto di nuovo
+    setTimeout(() => setFocusParkingId(null), 100);
   };
 
   return (
@@ -75,11 +82,16 @@ const UserDashboard = () => {
               parkings={parkings} 
               activeBookings={bookings.filter(b => b.displayStatus === 'attiva')}
               onSelectParking={handleOpenBooking} 
-              onFullscreen={() => setIsMapFullscreen(true)} 
+              onFullscreen={() => setIsMapFullscreen(true)}
+              focusParkingId={focusParkingId}
             />
           </div>
           
-          <ParkingList onSelectParking={handleOpenBooking} refreshTrigger={refreshBookings} />
+          <ParkingList 
+            onSelectParking={handleOpenBooking} 
+            onFocusParking={handleFocusOnParking}
+            refreshTrigger={refreshBookings} 
+          />
         </section>
 
         {/* Modale */}

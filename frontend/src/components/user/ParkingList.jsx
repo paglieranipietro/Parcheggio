@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { mockApi } from '../../services/mockApi';
 
-const ParkingList = ({ onSelectParking, refreshTrigger }) => {
+const ParkingList = ({ onSelectParking, onFocusParking, refreshTrigger }) => {
   const [parkings, setParkings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,12 +39,21 @@ const ParkingList = ({ onSelectParking, refreshTrigger }) => {
                   Tariffa oraria: <span className="text-primary font-semibold">€{parking.hourlyRate.toFixed(2)}/ora</span>
                 </p>
               </div>
-              <button 
-                onClick={() => onSelectParking(parking)}
-                className="w-full py-2 px-4 rounded-md font-medium transition-colors bg-lib-primary text-on-primary hover:opacity-90"
-              >
-                Prenota Posto
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => onSelectParking(parking)}
+                  className="flex-1 py-2 px-4 rounded-md font-medium transition-colors bg-lib-primary text-on-primary hover:opacity-90"
+                >
+                  Prenota Posto
+                </button>
+                <button 
+                  onClick={() => onFocusParking(parking.id)}
+                  className="py-2 px-4 rounded-md font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                  title="Visualizza sulla mappa"
+                >
+                  🗺️
+                </button>
+              </div>
             </div>
           </div>
         ))}
