@@ -15,11 +15,16 @@ const UserDashboard = () => {
   const [refreshBookings, setRefreshBookings] = useState(0);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [parkings, setParkings] = useState([]);
+  const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
     const data = mockApi.getParkings();
     setParkings(data);
-  }, []);
+    
+    // Carica le prenotazioni dell'utente
+    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
+    setBookings(userBookings);
+  }, [user.id, refreshBookings]);
 
   const handleOpenBooking = (parking) => {
     setSelectedParking(parking);
@@ -66,7 +71,12 @@ const UserDashboard = () => {
           
           {/* Mappa */}
           <div className="mb-8">
-            <ParkingMap parkings={parkings} onSelectParking={handleOpenBooking} onFullscreen={() => setIsMapFullscreen(true)} />
+            <ParkingMap 
+              parkings={parkings} 
+              activeBookings={bookings.filter(b => b.displayStatus === 'attiva')}
+              onSelectParking={handleOpenBooking} 
+              onFullscreen={() => setIsMapFullscreen(true)} 
+            />
           </div>
           
           <ParkingList onSelectParking={handleOpenBooking} refreshTrigger={refreshBookings} />
