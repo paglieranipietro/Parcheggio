@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockApi } from '../../services/mockApi';
+import api from '../../services/mockApi';
 import { useAuth } from '../../context/AuthContext';
 import EditBookingForm from './EditBookingForm';
 
@@ -8,19 +8,40 @@ const BookingList = ({ refreshTrigger }) => {
   const [bookings, setBookings] = useState([]);
   const [searchCode, setSearchCode] = useState('');
   const [editingBookingId, setEditingBookingId] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('tutti'); // 'tutti', 'attiva', 'scaduta', 'annullata'
+  const [statusFilter, setStatusFilter] = useState('tutti');
+
+  const loadBookings = async () => {
+    try {
+      const data = await api.getUserReservations(); 
+      const formattedData = data.map(b => ({
+        id: b.id,
+        parkingName: b.parking_lot_name,
+        date: b.start_time.split(' ')[0],
+        time: b.start_time.split(' ')[1],
+        duration: 1, 
+        licensePlate: b.license_plate,
+        price: 0, 
+        displayStatus: b.status.toLowerCase(),
+        code: b.id.substring(0, 8).toUpperCase()
+      }));
+      setBookings(formattedData);
+    } catch (err) {
+      console.error("Errore nel caricamento", err);
+    }
+  };
 
   useEffect(() => {
-    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
-    setBookings(userBookings);
-  }, [user.id, refreshTrigger]);
+    loadBookings();
+  }, [refreshTrigger]);
 
-  const handleCancel = (bookingId) => {
+  const handleCancel = async (bookingId) => {
     if (window.confirm("Sei sicuro di voler cancellare la prenotazione?")) {
-      mockApi.deleteBooking(bookingId);
-      // Ricarica le prenotazioni da mockApi per mostrare lo stato aggiornato
-      const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
-      setBookings(userBookings);
+      try {
+        await api.deleteBooking(bookingId);
+        loadBookings();
+      } catch (err) {
+        alert("Errore durante la cancellazione");
+      }
     }
   };
 
@@ -30,9 +51,7 @@ const BookingList = ({ refreshTrigger }) => {
 
   const handleEditSuccess = () => {
     setEditingBookingId(null);
-    // Ricarica le prenotazioni
-    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
-    setBookings(userBookings);
+    loadBookings();
   };
 
   const handleEditCancel = () => {
@@ -45,6 +64,7 @@ const BookingList = ({ refreshTrigger }) => {
     return matchesCode && matchesStatus;
   });
 
+  // ... da qui mantieni il tuo return ( ... ) con la tabella HTML
   return (
     <div className="bg-lib-card rounded-lg shadow overflow-hidden border border-lib-border">
       <div className="px-6 py-4 border-b border-lib-border bg-lib-secondary">

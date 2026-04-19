@@ -1,27 +1,27 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import RegisterForm from '../../components/auth/RegisterForm';
-import { mockApi } from '../../services/mockApi';
+import { useAuth } from '../context/AuthContext'; 
 
 const Register = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth(); 
 
   const handleRegister = async (userData) => {
     setIsLoading(true);
     setError('');
 
-    try {
-      console.log('Registrazione in corso...');
-      await mockApi.register(userData);
-      alert("Account Green creato con successo! 🌱");
+    const success = await register(userData);
+    if (success) {
+      alert("Account creato con successo! 🌱");
       navigate('/login');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+    } else {
+      setError("Errore nella registrazione. L'email potrebbe essere già in uso.");
     }
+    
+    setIsLoading(false);
   };
 
   return (
