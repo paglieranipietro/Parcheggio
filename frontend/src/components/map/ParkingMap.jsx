@@ -2,7 +2,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
-import '../../../node_modules/leaflet/dist/leaflet.css';
 
 // Fix per le icone di default di Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -225,7 +224,6 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
             />
           );
         })}
-        ))}
       </MapContainer>
     </div>
   );

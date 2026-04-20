@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminStats from './AdminStats';
 import ParkingTable from './ParkingTable';
-import { mockApi } from '../../services/mockApi';
+import api from '../../services/mockApi';
 
 export default function ParkingForm() {
     const [parkings, setParkings] = useState([]);
@@ -19,10 +19,10 @@ export default function ParkingForm() {
         hourlyRate: ''
     });
 
-    // Carica i parcheggi all'avvio usando il nostro mockApi
+    // Carica i parcheggi all'avvio usando il nostro api
     useEffect(() => {
         // Adattiamo i dati per la tabella del collega che usa "maxSpots" invece di "totalSpots"
-        const loadedParkings = mockApi.getParkings().map(p => ({
+        const loadedParkings = api.getParkings().map(p => ({
             ...p,
             maxSpots: p.totalSpots
         }));
@@ -44,18 +44,18 @@ export default function ParkingForm() {
 
         const newParking = {
             name: formData.name,
-            totalSpots: parseInt(formData.maxSpots), // mockApi vuole totalSpots
+            totalSpots: parseInt(formData.maxSpots), // api vuole totalSpots
             freeSpots: parseInt(formData.maxSpots),
             description: formData.description,
             address: formData.address,
             hourlyRate: parseFloat(formData.hourlyRate)
         };
 
-        // Salva nel mockApi
-        mockApi.addParking(newParking);
+        // Salva nel api
+        api.addParking(newParking);
 
         // Aggiorna la UI
-        const updated = mockApi.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
+        const updated = api.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
         setParkings(updated);
 
         setFormData({ name: '', maxSpots: '', description: '', address: '', hourlyRate: '' });
@@ -74,11 +74,11 @@ export default function ParkingForm() {
             setSelectedParking(null);
         }
 
-        // Rimuove dal mockApi
-        mockApi.deleteParking(parseInt(selectedParkingToRemove));
+        // Rimuove dal api
+        api.deleteParking(parseInt(selectedParkingToRemove));
 
         // Aggiorna la UI
-        const updated = mockApi.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
+        const updated = api.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
         setParkings(updated);
 
         setSelectedParkingToRemove('');

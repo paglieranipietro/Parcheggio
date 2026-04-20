@@ -9,10 +9,9 @@ export default function AdminStats({ selectedParking }) {
         );
     }
 
-    // Calcola i posti in base al parcheggio selezionato
-    // Per ora: posti occupati = 0 (da backend in futuro)
-    const totalAvailable = selectedParking.maxSpots;
-    const totalOccupied = 0;
+    // Usiamo total_spots dal database vero
+    const totalAvailable = selectedParking.total_spots || selectedParking.maxSpots || 0;
+    const totalOccupied = 0; // Per ora finto, lo collegherai alle prenotazioni attive
 
     return (
         <div className="mt-6 bg-lib-card rounded-lg p-6 border border-lib-border shadow transition-colors duration-300">

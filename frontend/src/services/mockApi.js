@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost/~paglia/parcheggio_php/api/v1'; 
+const BASE_URL = 'http://localhost:9080/~paglia/parcheggio/api/v1'; 
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');

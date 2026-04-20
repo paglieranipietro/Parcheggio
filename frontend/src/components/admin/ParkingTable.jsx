@@ -8,8 +8,8 @@ export default function ParkingTable({ selectedParking }) {
         );
     }
 
-    const totalSpots = selectedParking.maxSpots;
-    const spotsPerRow = 10;
+    // Usiamo total_spots che arriva dal vero database
+    const totalSpots = selectedParking.total_spots || selectedParking.maxSpots || 0;
     const spots = Array.from({ length: totalSpots }, (_, i) => i + 1);
 
     return (
@@ -30,7 +30,7 @@ export default function ParkingTable({ selectedParking }) {
 
             {/* Sezione info parcheggio selezionato */}
             <div className="mt-8 bg-lib-secondary rounded-lg border border-lib-border p-6 min-h-[80px] flex items-center justify-center">
-                <span className="text-tertiary text-center text-lg font-semibold">Statistiche non disponibili...</span>
+                <span className="text-tertiary text-center text-lg font-semibold">Statistiche dettagliate in arrivo...</span>
             </div>
         </div>
     );

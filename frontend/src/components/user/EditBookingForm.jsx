@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockApi } from '../../services/mockApi';
+import api from '../../services/mockApi';
 
 const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
   const [date, setDate] = useState(booking.date);
@@ -23,7 +23,7 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
 
   // Calcola il prezzo della prenotazione
   const calculatePrice = () => {
-    const parking = mockApi.getParkings().find(p => p.id === booking.parkingId);
+    const parking = api.getParkings().find(p => p.id === booking.parkingId);
     if (!parking) return '0.00';
     return (parseFloat(duration) * parking.hourlyRate).toFixed(2);
   };
@@ -64,7 +64,7 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
       ? `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
       : null;
 
-    const availability = mockApi.checkSlotAvailability(
+    const availability = api.checkSlotAvailability(
       booking.parkingId,
       date,
       time,
@@ -91,7 +91,7 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     const price = calculatePrice();
 
-    const result = mockApi.updateBooking(booking.id, {
+    const result = api.updateBooking(booking.id, {
       date,
       time,
       duration: parseInt(duration),

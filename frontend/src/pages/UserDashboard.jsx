@@ -6,7 +6,7 @@ import BookingForm from '../components/user/BookingForm';
 import AccountSettings from '../components/user/AccountSettings';
 import ParkingMap from '../components/map/ParkingMap';
 import { useAuth } from '../context/AuthContext';
-import { mockApi } from '../services/mockApi';
+import api from '../services/mockApi';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -19,11 +19,11 @@ const UserDashboard = () => {
   const [focusParkingId, setFocusParkingId] = useState(null);
 
   useEffect(() => {
-    const data = mockApi.getParkings();
+    const data = api.getParkings();
     setParkings(data);
     
     // Carica le prenotazioni dell'utente
-    const userBookings = mockApi.getBookingsByUserWithStatus(user.id);
+    const userBookings = api.getBookingsByUserWithStatus(user.id);
     setBookings(userBookings);
   }, [user.id, refreshBookings]);
 

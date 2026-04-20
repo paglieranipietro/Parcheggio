@@ -1,17 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { mockApi } from '../../services/mockApi';
+import api from '../../services/mockApi';
 
 const ParkingList = ({ onSelectParking, onFocusParking, refreshTrigger }) => {
   const [parkings, setParkings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const data = mockApi.getParkings();
-    setParkings(data);
-    setLoading(false);
+    const loadParkings = async () => {
+      try {
+        setLoading(true);
+        const data = await api.getParkingLots();
+        
+        // Adattiamo i dati del vero DB per la UI (aggiungiamo campi fittizi per l'estetica se mancano nel DB)
+        const formattedData = data.map(p => ({
+          ...p,
+          address: "Brescia", // Non abbiamo l'indirizzo nel DB attuale, mettiamo un default
+          co2: 150,
+          hourlyRate: 1.50
+        }));
+        
+        setParkings(formattedData);
+      } catch (error) {
+        console.error("Errore nel caricamento parcheggi:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadParkings();
   }, [refreshTrigger]);
 
-  if (loading) return <div className="text-center p-4 text-tertiary">Caricamento parcheggi...</div>;
+  if (loading) return <div className="text-center p-4 text-tertiary">Caricamento parcheggi in corso...</div>;
 
   return (
     <div className="mt-8">
@@ -37,6 +56,9 @@ const ParkingList = ({ onSelectParking, onFocusParking, refreshTrigger }) => {
               <div className="mb-4 p-3 bg-lib-secondary rounded-md border border-lib-border">
                 <p className="text-sm text-tertiary">
                   Tariffa oraria: <span className="text-primary font-semibold">€{parking.hourlyRate.toFixed(2)}/ora</span>
+                </p>
+                <p className="text-sm text-tertiary mt-1">
+                  Posti totali: <span className="text-primary font-semibold">{parking.total_spots}</span>
                 </p>
               </div>
               <div className="flex gap-2">

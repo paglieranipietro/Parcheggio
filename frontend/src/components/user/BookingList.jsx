@@ -189,7 +189,7 @@ const BookingList = ({ refreshTrigger }) => {
       {/* Modal Modifica Prenotazione */}
       {editingBookingId && (
         <EditBookingForm 
-          booking={mockApi.getBookingById(editingBookingId)}
+          booking={api.getBookingById(editingBookingId)}
           onSuccess={handleEditSuccess}
           onCancel={handleEditCancel}
         />

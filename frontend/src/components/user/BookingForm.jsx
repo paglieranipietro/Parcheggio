@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockApi } from '../../services/mockApi';
+import api from '../../services/mockApi';
 import { useAuth } from '../../context/AuthContext';
 
 const BookingForm = ({ parking, onSuccess, onCancel }) => {
@@ -23,7 +23,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
       if (hour !== '' && minute !== '') {
         time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
       }
-      const spots = mockApi.getAvailableSpotsForDateTime(
+      const spots = api.getAvailableSpotsForDateTime(
         parking.id, 
         date, 
         time,
@@ -108,7 +108,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
       if (selectedHour !== '' && selectedMinute !== '') {
         time = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
       }
-      const spots = mockApi.getAvailableSpotsForDateTime(
+      const spots = api.getAvailableSpotsForDateTime(
         parking.id, 
         selectedDate, 
         time,
@@ -170,7 +170,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
       status: 'active'
     };
 
-    mockApi.createBooking(newBooking);
+    api.createBooking(newBooking);
     alert(`Prenotazione confermata! Il tuo codice è: ${uniqueCode}\nTarga: ${selectedPlate.plate}\nTotale: €${price}`);
     onSuccess();
   };
