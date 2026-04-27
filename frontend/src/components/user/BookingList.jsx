@@ -187,9 +187,9 @@ const BookingList = ({ refreshTrigger }) => {
       )}
 
       {/* Modal Modifica Prenotazione */}
-      {editingBookingId && (
+      {editingBookingId && bookings.length > 0 && (
         <EditBookingForm 
-          booking={api.getBookingById(editingBookingId)}
+          booking={bookings.find(b => b.id === editingBookingId)}
           onSuccess={handleEditSuccess}
           onCancel={handleEditCancel}
         />

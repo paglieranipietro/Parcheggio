@@ -19,12 +19,20 @@ const UserDashboard = () => {
   const [focusParkingId, setFocusParkingId] = useState(null);
 
   useEffect(() => {
-    const data = api.getParkings();
-    setParkings(data);
+    const loadData = async () => {
+      try {
+        const data = await api.getParkingLots();
+        setParkings(data);
+        
+        // Carica le prenotazioni dell'utente
+        const userBookings = await api.getUserReservations();
+        setBookings(userBookings);
+      } catch (error) {
+        console.error('Errore nel caricamento dati:', error);
+      }
+    };
     
-    // Carica le prenotazioni dell'utente
-    const userBookings = api.getBookingsByUserWithStatus(user.id);
-    setBookings(userBookings);
+    loadData();
   }, [user.id, refreshBookings]);
 
   const handleOpenBooking = (parking) => {

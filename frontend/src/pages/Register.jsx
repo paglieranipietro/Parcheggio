@@ -15,8 +15,7 @@ const Register = () => {
 
     const success = await register(userData);
     if (success) {
-      alert("Account creato con successo! 🌱");
-      navigate('/login');
+      navigate('/login', { state: { successMessage: "Account creato con successo! 🌱 Puoi effettuare l'accesso." } });
     } else {
       setError("Errore nella registrazione. L'email potrebbe essere già in uso.");
     }

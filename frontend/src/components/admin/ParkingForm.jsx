@@ -21,12 +21,21 @@ export default function ParkingForm() {
 
     // Carica i parcheggi all'avvio usando il nostro api
     useEffect(() => {
-        // Adattiamo i dati per la tabella del collega che usa "maxSpots" invece di "totalSpots"
-        const loadedParkings = api.getParkings().map(p => ({
-            ...p,
-            maxSpots: p.totalSpots
-        }));
-        setParkings(loadedParkings);
+        const loadParkings = async () => {
+            try {
+                // Adattiamo i dati per la tabella del collega che usa "maxSpots" invece di "totalSpots"
+                const loadedParkings = await api.getParkingLots().then(data =>
+                    data.map(p => ({
+                        ...p,
+                        maxSpots: p.totalSpots || p.total_spots || 0
+                    }))
+                );
+                setParkings(loadedParkings);
+            } catch (error) {
+                console.error('Errore nel caricamento parcheggi:', error);
+            }
+        };
+        loadParkings();
     }, []);
 
     const handleInputChange = (e) => {
@@ -34,7 +43,7 @@ export default function ParkingForm() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleAddParking = (e) => {
+    const handleAddParking = async (e) => {
         e.preventDefault();
 
         if (!formData.name || !formData.maxSpots || !formData.address || !formData.hourlyRate) {
@@ -51,18 +60,21 @@ export default function ParkingForm() {
             hourlyRate: parseFloat(formData.hourlyRate)
         };
 
-        // Salva nel api
-        api.addParking(newParking);
-
-        // Aggiorna la UI
-        const updated = api.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
-        setParkings(updated);
-
-        setFormData({ name: '', maxSpots: '', description: '', address: '', hourlyRate: '' });
-        setShowAddModal(false);
+        try {
+            await api.addParking(newParking);
+            // Aggiorna la UI
+            const updated = await api.getParkingLots();
+            const formattedParkings = updated.map(p => ({ ...p, maxSpots: p.totalSpots || p.total_spots || 0 }));
+            setParkings(formattedParkings);
+            alert('Parcheggio aggiunto con successo!');
+            setFormData({ name: '', maxSpots: '', description: '', address: '', hourlyRate: '' });
+            setShowAddModal(false);
+        } catch (error) {
+            alert(`Errore: ${error.message}`);
+        }
     };
 
-    const handleRemoveParking = (e) => {
+    const handleRemoveParking = async (e) => {
         e.preventDefault();
 
         if (!selectedParkingToRemove) {
@@ -74,15 +86,18 @@ export default function ParkingForm() {
             setSelectedParking(null);
         }
 
-        // Rimuove dal api
-        api.deleteParking(parseInt(selectedParkingToRemove));
-
-        // Aggiorna la UI
-        const updated = api.getParkings().map(p => ({ ...p, maxSpots: p.totalSpots }));
-        setParkings(updated);
-
-        setSelectedParkingToRemove('');
-        setShowRemoveModal(false);
+        try {
+            await api.deleteParking(parseInt(selectedParkingToRemove));
+            // Aggiorna la UI
+            const updated = await api.getParkingLots();
+            const formattedParkings = updated.map(p => ({ ...p, maxSpots: p.totalSpots || p.total_spots || 0 }));
+            setParkings(formattedParkings);
+            alert('Parcheggio eliminato con successo!');
+            setSelectedParkingToRemove('');
+            setShowRemoveModal(false);
+        } catch (error) {
+            alert(`Errore: ${error.message}`);
+        }
     };
 
     return (

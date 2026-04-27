@@ -1,15 +1,16 @@
-import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState('');
+
+  const successMessage = location.state?.successMessage;
 
   const handleRedirect = (role) => {
-    // In base a come avete impostato App.jsx:
-    // Se usate la rotta unificata che avevamo fatto prima, basta: navigate('/dashboard');
-    // Altrimenti mantieni queste due separate come avevi scritto tu:
-    if (role === 'admin') {
+    if (role === 'amministratore' || role === 'admin') {
       navigate('/admin-dashboard');
     } else {
       navigate('/user-dashboard');
@@ -19,12 +20,18 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-lib-secondary">
       <div className="max-w-md w-full bg-lib-card p-8 rounded-lg shadow-lg border border-lib-border">
+        
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-center font-medium shadow-sm">
+            {successMessage}
+          </div>
+        )}
+
         <h1 className="text-2xl font-bold mb-2 text-lib-primary text-center">Benvenuto in Brescia Parking</h1>
         <p className="text-gray-300 mb-6 text-center">Ottimizza il tuo percorso, riduci le emissioni.</p>
 
         <LoginForm onLoginSuccess={handleRedirect} />
 
-        {/* SEZIONE AGGIUNTA: Link alla registrazione con stile "lib" */}
         <div className="mt-6 text-center border-t border-lib-border pt-4">
           <p className="text-sm text-gray-300">
             Non hai un account?{' '}
