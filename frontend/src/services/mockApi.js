@@ -64,13 +64,18 @@ export const api = {
   },
 
   createBooking: async (bookingData) => {
+    const start = new Date(`${bookingData.date}T${bookingData.time}`);
+    const duration = bookingData.duration || 1;
+    const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
+    const formatDb = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+
     const response = await fetch(`${BASE_URL}/reservations`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
         parking_lot_id: bookingData.parkingId,
-        start_time: `${bookingData.date} ${bookingData.time}`,
-        end_time: `${bookingData.date} ${bookingData.time}`,
+        start_time: formatDb(start),
+        end_time: formatDb(end),
         license_plate: bookingData.licensePlate
       })
     });
@@ -79,13 +84,18 @@ export const api = {
   },
 
   updateBooking: async (id, bookingData) => {
+    const start = new Date(`${bookingData.date}T${bookingData.time}`);
+    const duration = bookingData.duration || 1;
+    const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
+    const formatDb = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+
     const response = await fetch(`${BASE_URL}/reservations/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
         parking_lot_id: bookingData.parkingId,
-        start_time: `${bookingData.date} ${bookingData.time}`,
-        end_time: `${bookingData.date} ${bookingData.time}`,
+        start_time: formatDb(start),
+        end_time: formatDb(end),
         license_plate: bookingData.licensePlate
       })
     });
@@ -129,11 +139,13 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({
         name: parkingData.name,
-        total_spots: parkingData.totalSpots,
-        free_spots: parkingData.freeSpots,
-        description: parkingData.description,
-        address: parkingData.address,
-        hourly_rate: parkingData.hourlyRate
+        total_spots: parkingData.totalSpots || 100,
+        address: parkingData.address || "Brescia Centro",
+        // Mettiamo coordinate di default (Centro di Brescia) se il form non le ha
+        lat: parkingData.lat || 45.5415,
+        lng: parkingData.lng || 10.2160,
+        hourly_rate: parkingData.hourlyRate || 1.50,
+        co2: parkingData.co2 || 100
       })
     });
     if (!response.ok) throw new Error('Errore nell\'aggiunta del parcheggio');

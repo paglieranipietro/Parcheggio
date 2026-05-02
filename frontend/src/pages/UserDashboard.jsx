@@ -24,9 +24,28 @@ const UserDashboard = () => {
         const data = await api.getParkingLots();
         setParkings(data);
         
-        // Carica le prenotazioni dell'utente
         const userBookings = await api.getUserReservations();
-        setBookings(userBookings);
+        
+        const formattedBookings = userBookings.map(b => {
+          const start = new Date(b.start_time);
+          const end = new Date(b.end_time);
+          const durationHours = (end - start) / (1000 * 60 * 60) || 1;
+          const parking = data.find(p => p.id === b.parking_lot_id);
+          const price = parking ? parking.hourly_rate * durationHours : 0;
+
+          return {
+            ...b,
+            parkingId: b.parking_lot_id,
+            date: start.toLocaleDateString('it-IT'),
+            time: start.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            code: b.id.substring(0, 8).toUpperCase(),
+            duration: durationHours,
+            price: price,
+            licensePlate: b.license_plate
+          };
+        });
+        
+        setBookings(formattedBookings);
       } catch (error) {
         console.error('Errore nel caricamento dati:', error);
       }
@@ -54,7 +73,6 @@ const UserDashboard = () => {
 
   const handleFocusOnParking = (parkingId) => {
     setFocusParkingId(parkingId);
-    // Reset dopo 100ms per permettere l'effetto di nuovo
     setTimeout(() => setFocusParkingId(null), 100);
   };
 
@@ -63,32 +81,26 @@ const UserDashboard = () => {
       <Header title="Green Parking Brescia" user={user} onOpenSettings={handleOpenSettings} />
       
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Intestazione Dashboard */}
         <div className="mb-8 bg-gradient-to-r from-lib-primary to-lib-secondary rounded-xl shadow-lg p-8">
           <h2 className="text-3xl font-bold mb-2 text-on-primary">Ciao, {user?.name}!</h2>
           <p className="opacity-90 text-on-primary">Gestisci le tue soste e contribuisci a una Brescia più verde e sostenibile.</p>
         </div>
 
-        {/* Sezione Prenotazioni Attive */}
         <section className="mb-10">
           <BookingList refreshTrigger={refreshBookings} />
         </section>
 
-        {/* Separatore visivo */}
         <hr className="border-lib-border my-8" />
 
-        {/* Sezione Ricerca Parcheggio */}
         <section>
           <h3 className="text-xl font-semibold text-primary mb-4">
             Parcheggi Disponibili a Brescia
           </h3>
           
-          {/* Mappa */}
           <div className="mb-8">
             <ParkingMap 
               parkings={parkings} 
-              activeBookings={bookings.filter(b => b.displayStatus === 'attiva')}
+              activeBookings={bookings.filter(b => b.status === 'ACTIVE')} 
               onSelectParking={handleOpenBooking} 
               onFullscreen={() => setIsMapFullscreen(true)}
               focusParkingId={focusParkingId}
@@ -102,7 +114,6 @@ const UserDashboard = () => {
           />
         </section>
 
-        {/* Modale */}
         {selectedParking && (
           <BookingForm 
             parking={selectedParking} 
@@ -111,12 +122,10 @@ const UserDashboard = () => {
           />
         )}
 
-        {/* Impostazioni Account */}
         {showSettings && (
           <AccountSettings onClose={() => setShowSettings(false)} />
         )}
 
-        {/* Modale Mappa Fullscreen */}
         {isMapFullscreen && (
           <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
             <div className="flex justify-between items-center p-4 bg-lib-secondary border-b border-lib-border">

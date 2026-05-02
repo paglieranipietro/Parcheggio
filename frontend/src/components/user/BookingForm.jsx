@@ -303,7 +303,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-tertiary">Tariffa oraria:</span>
-                  <span className="text-primary font-semibold">€{parking.hourlyRate.toFixed(2)}/ora</span>
+                  <span className="text-primary font-semibold">€{Number(parking.hourly_rate || parking.hourlyRate || 0).toFixed(2)}/ora</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-tertiary">Durata:</span>

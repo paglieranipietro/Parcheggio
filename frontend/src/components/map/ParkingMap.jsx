@@ -3,7 +3,6 @@ import L from 'leaflet';
 import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 
-// Fix per le icone di default di Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -11,7 +10,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Componente helper per il focus sulla mappa
 const MapFocusHandler = ({ parkings, focusParkingId }) => {
   const map = useMap();
 
@@ -30,12 +28,10 @@ const MapFocusHandler = ({ parkings, focusParkingId }) => {
   return null;
 };
 
-// Componente interno che contiene il marker e usa getMap
 const ParkingMarker = ({ parking, icon, parkingBookings, onSelectParking, hasBookings }) => {
   const map = useMap();
   
   const handleFocus = () => {
-    // flyTo con animazione al marker
     map.flyTo([parking.lat, parking.lng], 17, {
       duration: 1.5,
       easeLinearity: 0.5
@@ -52,7 +48,6 @@ const ParkingMarker = ({ parking, icon, parkingBookings, onSelectParking, hasBoo
           <h4 style={{ fontWeight: 'bold', fontSize: '16px', color: '#1f2937', marginBottom: '4px' }}>{parking.name}</h4>
           <p style={{ fontSize: '14px', color: '#4b5563', marginBottom: '8px' }}>{parking.address}</p>
           
-          {/* Se ci sono prenotazioni attive, mostra il riepilogo */}
           {hasBookings ? (
             <div style={{ backgroundColor: '#f0fdf4', padding: '12px', borderRadius: '6px', marginBottom: '12px', border: '2px solid #22c55e' }}>
               <h5 style={{ fontWeight: '600', color: '#15803d', marginBottom: '8px' }}>✅ Prenotazioni Attive ({parkingBookings.length})</h5>
@@ -77,12 +72,12 @@ const ParkingMarker = ({ parking, icon, parkingBookings, onSelectParking, hasBoo
           ) : (
             <div style={{ backgroundColor: '#f3f4f6', padding: '8px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-                <span style={{ color: '#4b5563' }}>Posti disponibili:</span>
-                <span style={{ fontWeight: '600', color: '#1f2937' }}>{parking.freeSpots}/{parking.totalSpots}</span>
+                <span style={{ color: '#4b5563' }}>Posti totali:</span>
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{parking.total_spots}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                 <span style={{ color: '#4b5563' }}>Tariffa:</span>
-                <span style={{ fontWeight: '600', color: '#1f2937' }}>€{parking.hourlyRate.toFixed(2)}/h</span>
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>€{Number(parking.hourly_rate || 0).toFixed(2)}/h</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                 <span style={{ color: '#4b5563' }}>CO2 Risparmiata:</span>
@@ -138,15 +133,12 @@ const ParkingMarker = ({ parking, icon, parkingBookings, onSelectParking, hasBoo
 };
 
 const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFullscreen, focusParkingId, isFullscreen = false }) => {
-  // Centro su Brescia
   const center = [45.5384, 10.2116];
   const zoom = 14;
 
-  // Funzione per ottenere l'icona del marker basata sul fatto che sia prenotato o meno
   const getMarkerIcon = (parkingId) => {
     const isBooked = activeBookings.some(b => b.parkingId === parkingId);
     
-    // Crea un'icona personalizzata usando SVG
     const svgIcon = isBooked
       ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="41" style="filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3))">
           <path d="M12 1C6.5 1 2 5.5 2 11c0 7 10 12 10 12s10-5 10-12c0-5.5-4.5-10-10-10z" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
@@ -156,16 +148,6 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
           <path d="M12 1C6.5 1 2 5.5 2 11c0 7 10 12 10 12s10-5 10-12c0-5.5-4.5-10-10-10z" fill="#3b82f6" stroke="#1e40af" stroke-width="1"/>
           <circle cx="12" cy="11" r="3" fill="white"/>
         </svg>`;
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = 25;
-    canvas.height = 41;
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = function() {
-      ctx.drawImage(img, 0, 0);
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgIcon);
     
     return L.icon({
       iconUrl: 'data:image/svg+xml;base64,' + btoa(svgIcon),
@@ -177,14 +159,12 @@ const ParkingMap = ({ parkings = [], activeBookings = [], onSelectParking, onFul
     });
   };
 
-  // Funzione per ottenere tutte le prenotazioni attive per un parcheggio
   const getActiveBookingsForParking = (parkingId) => {
     return activeBookings.filter(b => b.parkingId === parkingId);
   };
 
   return (
     <div className="w-full rounded-lg overflow-hidden shadow-lg border border-lib-border relative z-10" style={{ height: isFullscreen ? '100%' : '24rem' }}>
-      {/* Bottone Fullscreen */}
       {!isFullscreen && (
         <button 
           onClick={onFullscreen}

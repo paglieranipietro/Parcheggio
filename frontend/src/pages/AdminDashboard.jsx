@@ -6,14 +6,12 @@ import ParkingForm from '../components/admin/ParkingForm';
 export default function AdminDashboard() {
     const { user, logout } = useAuth();
 
-    // Controllo di sicurezza: se non sei admin, torni alla dashboard utente o al login
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'amministratore')) {
         return <Navigate to="/dashboard" replace />;
     }
 
     return (
         <div className="min-h-screen bg-lib-dark flex flex-col p-6">
-            {/* Intestazione (Header) per l'Admin */}
             <div className="flex justify-between items-center mb-6 bg-lib-card rounded-lg shadow border border-lib-border p-4 w-full transition-colors duration-300">
                 <div>
                     <h1 className="text-2xl font-bold text-primary">Pannello Amministratore</h1>
@@ -27,7 +25,6 @@ export default function AdminDashboard() {
                 </button>
             </div>
 
-            {/* Qui importiamo tutto il form/grafica della gestione */}
             <div className="flex-1 w-full">
                 <ParkingForm />
             </div>
