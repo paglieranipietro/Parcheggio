@@ -25,7 +25,7 @@ Il progetto è suddiviso in due componenti principali:
 | **Frontend** | React + Vite + TailwindCSS | `5173` |
 | **Backend** | FastAPI + SQLAlchemy + SQLite | `8000` |
 
-> **Nota**: Attualmente il frontend utilizza un **mockApi** locale (dati simulati in memoria) per la gestione dei parcheggi e delle prenotazioni. Il backend è strutturato e funzionante ma **non ancora collegato** al frontend.
+> **Nota**: Il frontend è **collegato a un backend API reale** tramite Fetch. Le richieste vengono inviate a `http://localhost:9080/~paglia/parcheggio/api/v1`.
 
 ---
 
@@ -135,12 +135,17 @@ L'app parte su `http://localhost:5173`.
 - **Visualizzazione posti** del parcheggio selezionato con griglia grafica
 - **Statistiche** del parcheggio selezionato (posti disponibili / occupati)
 
-### 🎨 UI/UX
-- **Design system** custom con variabili CSS (`lib-primary`, `lib-dark`, ecc.)
-- **Dark mode** nativa
-- **Layout responsive**
-- **Animazioni e transizioni** fluide
-- **Modal** per form di prenotazione, modifica, e gestione account
+### 🗺️ Visualizzazione Interattiva su Mappa
+- **Mappa Leaflet/OpenStreetMap** integrata per visualizzare i parcheggi
+- **Marker colorati** che cambiano colore in base allo stato (parcheggio libero = blu, con prenotazioni attive = verde)
+- **Popup dettagliato** al click su ogni marker con:
+  - Nome e indirizzo parcheggio
+  - Posti disponibili e tariffa oraria
+  - CO2 risparmiata
+  - Lista prenotazioni attive per quel parcheggio (con codice univoco, targa, durata, prezzo)
+- **Focus dinamico** al click sul bottone mappa (fly-to con animazione)
+- **Fullscreen mode** per visualizzazione a schermo intero
+- **Centro su Brescia** con zoom appropriato (livello 14)
 
 ---
 
@@ -155,19 +160,31 @@ Il backend espone le seguenti API raggruppate per modulo:
 | `POST` | `/token` | Login (restituisce JWT) |
 | `GET` | `/verify` | Verifica validità di un token |
 | `GET` | `/me` | Dati dell'utente autenticato |
+| `PUT` | `/me` | Aggiornamento profilo utente |
+| `POST` | `/license-plates` | Aggiunta targa |
+| `GET` | `/license-plates` | Elenco targhe dell'utente |
+| `DELETE` | `/license-plates/{plate_id}` | Eliminazione targa |
+| `PUT` | `/license-plates/{plate_id}/select` | Selezione targa attiva |
 
-### Parcheggi (`/api/v1/parcheggi`)
+### Parcheggi (`/api/v1/parking-lots`)
 | Metodo | Endpoint | Descrizione |
 |--------|----------|-------------|
 | `GET` | `/` | Lista di tutti i parcheggi |
-| `POST` | `/` | Aggiunta nuovo parcheggio |
-| `DELETE` | `/{id_parcheggio}` | Eliminazione parcheggio |
+| `POST` | `/` | Aggiunta nuovo parcheggio (admin) |
+| `PUT` | `/{id}` | Modifica parcheggio |
+| `DELETE` | `/{id}` | Eliminazione parcheggio |
+| `GET` | `/{id}/stats` | Statistiche del parcheggio |
+| `GET` | `/{id}/availability` | Verifica disponibilità per data/ora/durata |
+| `GET` | `/{id}/available-spots` | Numero posti disponibili |
 
-### Prenotazioni (`/api/v1/prenotazioni`)
+### Prenotazioni (`/api/v1/reservations`)
 | Metodo | Endpoint | Descrizione |
 |--------|----------|-------------|
 | `POST` | `/` | Creazione nuova prenotazione |
-| `GET` | `/utente/{id_utente}` | Prenotazioni di un utente |
+| `GET` | `/user` | Prenotazioni dell'utente autenticato |
+| `GET` | `/{id}` | Dettagli singola prenotazione |
+| `PUT` | `/{id}` | Modifica prenotazione |
+| `DELETE` | `/{id}` | Cancellazione prenotazione |
 
 ---
 
@@ -186,6 +203,8 @@ Parcheggio/
 │   │   │   │   └── LoginForm.jsx         # Form di login
 │   │   │   ├── layout/
 │   │   │   │   └── Header.jsx            # Header con navigazione
+│   │   │   ├── map/
+│   │   │   │   └── ParkingMap.jsx        # Mappa Leaflet OpenStreetMap
 │   │   │   └── user/
 │   │   │       ├── AccountSettings.jsx   # Gestione profilo + targhe
 │   │   │       ├── BookingForm.jsx       # Form prenotazione
@@ -201,7 +220,7 @@ Parcheggio/
 │   │   │   ├── Register.jsx             # Pagina registrazione
 │   │   │   └── UserDashboard.jsx        # Pagina utente
 │   │   ├── services/
-│   │   │   └── mockApi.js               # API simulata (dati in memoria)
+│   │   │   └── api.js                   # Client API (Fetch HTTP)
 │   │   ├── App.jsx                       # Routing principale
 │   │   ├── main.jsx                      # Entry point React
 │   │   └── index.css                     # Stili globali + design system
@@ -213,13 +232,13 @@ Parcheggio/
 ├── backend-python/
 │   ├── app/
 │   │   ├── auth/
-│   │   │   ├── router.py                 # Endpoint autenticazione
+│   │   │   ├── router.py                 # Endpoint autenticazione + license plates
 │   │   │   ├── schemas.py                # Schemi Pydantic (validazione)
 │   │   │   └── service.py               # Logica JWT + hashing password
 │   │   ├── parcheggi/
-│   │   │   └── router.py                # CRUD parcheggi
+│   │   │   └── router.py                # CRUD parcheggi + statistiche
 │   │   ├── prenotazioni/
-│   │   │   └── router.py                # Gestione prenotazioni
+│   │   │   └── router.py                # Gestione prenotazioni + disponibilità
 │   │   ├── database.py                   # Connessione DB (SQLite/MySQL)
 │   │   └── models.py                     # Modelli SQLAlchemy
 │   ├── main.py                           # Entry point FastAPI
@@ -245,34 +264,45 @@ Il frontend include account di test nel mockApi:
 
 ## ⚠️ Limitazioni e Note
 
-### Frontend → Backend non collegati
-- Il frontend utilizza un **mockApi** con dati in memoria. I dati vengono persi al refresh della pagina.
-- Il backend è funzionante e testabile tramite Swagger (`/docs`), ma le chiamate dal frontend non sono ancora indirizzate alle API reali.
-- Per il collegamento futuro: sostituire le chiamate in `mockApi.js` con chiamate **Axios** verso `http://localhost:8000/api/v1/`.
+### Frontend → Backend
+- Il frontend è **collegato a un backend API reale** tramite Fetch HTTP.
+- Le richieste vengono inviate a `http://localhost:9080/~paglia/parcheggio/api/v1`.
+- Autenticazione tramite **JWT token** salvato in `localStorage`.
 
 ### Autenticazione
-- Il **frontend** utilizza un sistema di autenticazione simulato (mock): l'utente viene salvato nello state React, senza token.
-- Il **backend** ha un'autenticazione completa con JWT e bcrypt, ma non è integrata con il frontend.
-- Non c'è persistenza della sessione: al refresh della pagina l'utente deve rifare il login.
+- **Frontend**: autenticazione tramite JWT token (persistente in localStorage)
+- **Backend**: JWT completo con bcrypt per password + validazione email
+- Persistenza della sessione: al refresh della pagina l'utente rimane loggato se il token è valido
 
 ### Database
 - Il backend usa **SQLite** come database di sviluppo (`auth.db`). È predisposto per la migrazione a MariaDB/MySQL cambiando la variabile `DATABASE_URL` nel file `.env`.
 - Le tabelle vengono create automaticamente all'avvio del server tramite `Base.metadata.create_all()`.
 
-### Admin Dashboard
-- Le **statistiche dei posti occupati** sono statiche (sempre 0), in quanto non ancora collegate ai dati delle prenotazioni reali.
-- La **griglia dei posti** è puramente visiva e non riflette lo stato reale di occupazione.
+### Mappa
+- La **mappa Leaflet** integra OpenStreetMap per visualizzare i parcheggi di Brescia
+- I marker cambiano colore in base allo stato (blu = libero, verde = con prenotazioni)
+- Mostra le prenotazioni attive direttamente dal popup del marker
+- Supporta fullscreen mode per visualizzazione estesa
 
-### Prenotazioni (Frontend)
-- I **posti disponibili** vengono calcolati lato client con logica di sovrapposizione temporale, ma non sono sincronizzati con un backend.
-- Il **codice univoco** della prenotazione è generato lato client e non garantisce unicità globale.
-- Il polling automatico di aggiornamento posti avviene ogni 30 secondi, ma solo su dati locali.
+### Prenotazioni e Disponibilità
+- **Posti disponibili** calcolati tramite API backend con logica di sovrapposizione temporale
+- **Codice univoco** della prenotazione generato dal backend e garantisce unicità globale
+- **Controllo di disponibilità** in tempo reale prima della creazione della prenotazione
+
+### Funzionalità Completate
+- ✅ Autenticazione con JWT
+- ✅ Gestione targhe (CRUD)
+- ✅ Prenotazioni complete (CRUD + validazione disponibilità)
+- ✅ Mappa interattiva con OpenStreetMap
+- ✅ Gestione profilo utente
+- ✅ Dashboard admin con CRUD parcheggi
+- ✅ Statistiche parcheggi
 
 ### Funzionalità Predisposte (Non ancora attive)
-- **ThemeContext**: struttura per il cambio tema chiaro/scuro, non ancora implementata visivamente.
-- **Librerie ML**: scikit-learn, pandas e numpy sono installati nel backend in previsione di analisi predittive (es. previsione occupazione parcheggi).
-- **Statistiche Emissioni**: il modello `StatisticaEmissioni` nel database è pronto ma non ancora popolato.
-- **Coordinate GPS**: i campi `latitudine` e `longitudine` nel modello Parcheggio sono pronti per l'integrazione con mappe.
+- **ThemeContext**: struttura per il cambio tema chiaro/scuro, non ancora implementata visivamente
+- **Librerie ML**: scikit-learn, pandas e numpy sono installati nel backend in previsione di analisi predittive (es. previsione occupazione parcheggi)
+- **Statistiche Emissioni**: il modello `StatisticaEmissioni` nel database è pronto ma non ancora popolato
+- **Email notifications**: backend ha email-validator ma non sono implementate notifiche email
 
 ---
 
