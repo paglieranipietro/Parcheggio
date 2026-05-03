@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/mockApi';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const BookingForm = ({ parking, onSuccess, onCancel }) => {
@@ -9,161 +9,119 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
   const [minute, setMinute] = useState('');
   const [duration, setDuration] = useState('1');
   const [availableSpots, setAvailableSpots] = useState(null);
+  /**
+   * Contiene i dati di disponibilità dal database: {available, spots, total_spots}
+   */
   const [dateTimeError, setDateTimeError] = useState('');
+  const [isLoadingSpots, setIsLoadingSpots] = useState(false);
 
-  const selectedPlate = user.licensePlates?.find(p => p.isSelected);
+  // Le targhe arrivano dall'AuthContext aggiornato, non serve ricaricarle!
+  const licensePlates = user?.licensePlates || [];
+  const selectedPlate = licensePlates.find(p => p.isSelected);
 
-  // Polling ogni 30 secondi per ricalcolare i posti disponibili (per prenotazioni scadute)
-  useEffect(() => {
-    if (!date) return;
-
-    const interval = setInterval(async () => {
-      // Ricalcola i posti disponibili, passando anche l'orario e la durata
-      let time = null;
-      if (hour !== '' && minute !== '') {
-        time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-      }
-      const spots = await api.getAvailableSpotsForDateTime(
-        parking.id, 
-        date, 
-        time,
-        parseFloat(duration)
-      );
-      setAvailableSpots(spots);
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [date, hour, minute, duration, parking.id]);
-
-  // Calcola il prezzo della prenotazione
-  const calculatePrice = () => {
-    return (parseFloat(duration) * parking.hourlyRate).toFixed(2);
-  };
-
-  // Ottiene la data odierna in formato YYYY-MM-DD
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
-
-  // Ottiene l'ora corrente
+  // Ottiene la data odierna
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
   const getCurrentHour = () => new Date().getHours();
   const getCurrentMinute = () => new Date().getMinutes();
 
-  // Verifica se la data/ora selezionata è valida (non nel passato)
-  const isValidDateTime = (selectedDate, selectedHour, selectedMinute) => {
-    const today = getTodayDate();
-    const currentHour = getCurrentHour();
-    const currentMinute = getCurrentMinute();
+  // Effettua la vera chiamata al backend (Sostituisce il vecchio polling parziale e l'updateAvailableSpots finto)
+  useEffect(() => {
+    let isMounted = true;
 
-    // Se la data è nel passato
-    if (selectedDate < today) {
-      return false;
-    }
-
-    // Se è oggi, controlla se l'orario è nel passato
-    if (selectedDate === today) {
-      const selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      
-      if (selectedTimeInMinutes <= currentTimeInMinutes) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const updateAvailableSpots = async (selectedDate, selectedHour, selectedMinute) => {
-    // Resetta l'errore
-    setDateTimeError('');
-
-    if (selectedDate) {
-      const today = getTodayDate();
-      
-      // Se la data è nel passato
-      if (selectedDate < today) {
-        setDateTimeError('Non puoi prenotare per una data passata');
-        setAvailableSpots(null);
+    const checkAvailability = async () => {
+      // Non controllare se non abbiamo tutti i dati temporali
+      if (!date || hour === '' || minute === '' || !duration) {
+        if (isMounted) {
+          setAvailableSpots(null);
+          setDateTimeError('');
+        }
         return;
       }
 
-      // Se è oggi e abbiamo selezionato anche l'ora, controlla se è nel passato
-      if (selectedDate === today && selectedHour !== '' && selectedMinute !== '') {
-        const currentHour = getCurrentHour();
-        const currentMinute = getCurrentMinute();
-        const selectedTimeInMinutes = parseInt(selectedHour) * 60 + parseInt(selectedMinute);
-        const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      const today = getTodayDate();
+      
+      // Controllo lato client per evitare chiamate inutili al DB
+      if (date < today) {
+        if (isMounted) setDateTimeError('Non puoi prenotare per una data passata');
+        return;
+      }
+
+      if (date === today) {
+        const selectedTimeInMinutes = parseInt(hour) * 60 + parseInt(minute);
+        const currentTimeInMinutes = getCurrentHour() * 60 + getCurrentMinute();
         
         if (selectedTimeInMinutes <= currentTimeInMinutes) {
-          setDateTimeError('Non puoi prenotare per un orario già trascorso');
-          setAvailableSpots(null);
+          if (isMounted) setDateTimeError('Non puoi prenotare per un orario già trascorso');
           return;
         }
       }
 
-      // Se la data è valida, mostra i posti disponibili
-      // Nota: getAvailableSpotsForDateTime non è disponibile nella API attuale
-      // Per ora, assumiamo che i posti siano sempre disponibili
-      setAvailableSpots({ available: true, spots: 999 });
-    } else {
-      setAvailableSpots(null);
-    }
-  };
+      // Se superiamo i controlli locali, chiediamo al Database!
+      if (isMounted) {
+        setDateTimeError('');
+        setIsLoadingSpots(true);
+      }
 
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setDate(newDate);
-    setHour('');
-    setMinute('');
-    updateAvailableSpots(newDate, '', '');
-  };
+      try {
+        const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        // La nostra nuova magica rotta backend in azione
+        const spots = await api.getAvailableSpotsForDateTime(
+          parking.id, 
+          date, 
+          time,
+          parseFloat(duration)
+        );
+        
+        if (isMounted) {
+          setAvailableSpots(spots); // spots = { available: true/false, spots: X, total_spots: Y }
+        }
+      } catch (error) {
+        console.error("Errore verifica disponibilità:", error);
+        if (isMounted) setDateTimeError('Impossibile verificare la disponibilità');
+      } finally {
+        if (isMounted) setIsLoadingSpots(false);
+      }
+    };
 
-  const handleHourChange = (e) => {
-    setHour(e.target.value);
-    updateAvailableSpots(date, e.target.value, minute);
-  };
+    checkAvailability();
 
-  const handleMinuteChange = (e) => {
-    setMinute(e.target.value);
-    updateAvailableSpots(date, hour, e.target.value);
-  };
+    // Rimuoviamo il polling di 30 secondi che crea solo sovraccarico 
+    // e facciamo scattare il controllo solo quando l'utente cambia parametri vitali.
+  }, [date, hour, minute, duration, parking.id]);
 
-  const handleDurationChange = (e) => {
-    setDuration(e.target.value);
-    // Ricalcola i posti disponibili quando cambia la durata
-    updateAvailableSpots(date, hour, minute);
+  const calculatePrice = () => {
+    // Gestione unificata di hourly_rate (DB snake_case) vs hourlyRate (frontend camelCase)
+    const rate = parking.hourly_rate || parking.hourlyRate || 0;
+    return (parseFloat(duration) * rate).toFixed(2);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Verifica che sia stata selezionata una targa
     if (!selectedPlate) {
-      alert('⚠️ Errore: Devi selezionare una targa prima di prenotare.\n\nAccedi alle impostazioni del tuo account per aggiungere una targa.');
+      alert('⚠️ Errore: Devi selezionare una targa prima di prenotare.');
+      return;
+    }
+
+    if (dateTimeError || !availableSpots || !availableSpots.available) {
+      alert('Impossibile procedere: slot non disponibile o orario non valido.');
       return;
     }
 
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    const uniqueCode = `BS-${parking.id}-${Date.now().toString().slice(-4)}`;
     const price = calculatePrice();
 
     const newBooking = {
-      userId: user.id,
       parkingId: parking.id,
-      parkingName: parking.name,
       date: date,
       time: time,
       duration: parseInt(duration),
       price: parseFloat(price),
-      code: uniqueCode,
-      licensePlate: selectedPlate.plate,
-      status: 'active'
+      licensePlate: selectedPlate.plate // Prende la targa dall'oggetto salvato nel db
     };
 
     try {
       await api.createBooking(newBooking);
-      alert(`Prenotazione confermata! Il tuo codice è: ${uniqueCode}\nTarga: ${selectedPlate.plate}\nTotale: €${price}`);
       onSuccess();
     } catch (error) {
       alert(`Errore: ${error.message}`);
@@ -171,9 +129,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
   };
 
   return (
-    // Overlay scuro che copre tutto lo schermo
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
-      {/* Contenuto del Modale */}
       <div className="bg-lib-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
         
         <div className="bg-lib-primary px-6 py-4">
@@ -182,6 +138,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* ... LA TUA SEZIONE TARGHE IDENTICA A PRIMA ... */}
           {!selectedPlate && (
             <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30">
               <p className="text-red-400 text-sm font-medium">⚠️ Devi selezionare una targa prima di prenotare. Accedi alle impostazioni per aggiungere una targa.</p>
@@ -194,6 +151,8 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
               <p className="text-lib-primary font-mono font-bold text-lg">{selectedPlate.plate}</p>
             </div>
           )}
+
+          {/* ... I TUOI INPUT DI DATA E ORA IDENTICI A PRIMA ... */}
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Data</label>
             <input 
@@ -201,7 +160,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
               required 
               min={getTodayDate()}
               value={date} 
-              onChange={handleDateChange} 
+              onChange={(e) => setDate(e.target.value)} 
               className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent"
             />
           </div>
@@ -214,22 +173,15 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
                   required 
                   disabled={!date}
                   value={hour} 
-                  onChange={handleHourChange} 
+                  onChange={(e) => setHour(e.target.value)} 
                   className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">Ora</option>
                   {[...Array(24)].map((_, i) => {
                     const today = getTodayDate();
                     const currentHour = getCurrentHour();
-                    // Se è oggi, non mostrare ore che sono già passate
-                    if (date === today && i < currentHour) {
-                      return null;
-                    }
-                    return (
-                      <option key={i} value={i}>
-                        {String(i).padStart(2, '0')}
-                      </option>
-                    );
+                    if (date === today && i < currentHour) return null;
+                    return <option key={i} value={i}>{String(i).padStart(2, '0')}</option>;
                   })}
                 </select>
               </div>
@@ -238,7 +190,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
                   required 
                   disabled={!date || hour === ''}
                   value={minute} 
-                  onChange={handleMinuteChange} 
+                  onChange={(e) => setMinute(e.target.value)} 
                   className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">Min</option>
@@ -246,15 +198,8 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
                     const today = getTodayDate();
                     const currentHour = getCurrentHour();
                     const currentMinute = getCurrentMinute();
-                    // Se è oggi e l'ora è quella corrente, non mostrare minuti che sono già passati
-                    if (date === today && hour == currentHour && m <= currentMinute) {
-                      return null;
-                    }
-                    return (
-                      <option key={m} value={m}>
-                        {String(m).padStart(2, '0')}
-                      </option>
-                    );
+                    if (date === today && hour == currentHour && m <= currentMinute) return null;
+                    return <option key={m} value={m}>{String(m).padStart(2, '0')}</option>;
                   })}
                 </select>
               </div>
@@ -267,7 +212,7 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
               required 
               disabled={!date || hour === '' || minute === ''}
               value={duration} 
-              onChange={handleDurationChange} 
+              onChange={(e) => setDuration(e.target.value)} 
               className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {[1, 2, 3, 4, 5, 6, 8, 12, 24].map((h) => (
@@ -278,27 +223,34 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
             </select>
           </div>
 
+          {/* ... NUOVA SEZIONE FEEDBACK ... */}
           {dateTimeError && (
             <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30">
               <p className="text-red-400 text-sm font-medium">⚠️ {dateTimeError}</p>
             </div>
           )}
 
-          {!dateTimeError && availableSpots !== null && (
-            <div className={`p-3 rounded-md ${availableSpots > 0 ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
-              {availableSpots > 0 ? (
+          {isLoadingSpots && !dateTimeError && (
+            <div className="p-3 text-center text-tertiary text-sm animate-pulse">
+              Verifica disponibilità in corso...
+            </div>
+          )}
+
+          {!isLoadingSpots && !dateTimeError && availableSpots !== null && (
+            <div className={`p-3 rounded-md ${availableSpots.available ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
+              {availableSpots.available ? (
                 <p className="text-green-400 text-sm font-medium">
-                  ✓ Posti disponibili: <strong>{availableSpots}</strong>
+                  ✓ Posti disponibili: <strong>{availableSpots.spots}/{availableSpots.total_spots}</strong>
                 </p>
               ) : (
                 <p className="text-red-400 text-sm font-medium">
-                  ✗ Nessun posto disponibile in questa data/orario
+                  ✗ Parcheggio al completo per la fascia oraria selezionata.
                 </p>
               )}
             </div>
           )}
 
-          {!dateTimeError && date && hour !== '' && minute !== '' && duration && (
+          {!dateTimeError && availableSpots?.available && (
             <div className="p-4 rounded-md bg-lib-secondary border border-lib-border">
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -327,18 +279,19 @@ const BookingForm = ({ parking, onSuccess, onCancel }) => {
             </button>
             <button 
               type="submit" 
-              disabled={!selectedPlate || availableSpots === 0 || availableSpots === null || dateTimeError !== ''}
+              // Abilitiamo il pulsante SOLO se la targa c'è, non ci sono errori e il DB dice che ci sono posti!
+              disabled={!selectedPlate || !availableSpots?.available || dateTimeError !== '' || isLoadingSpots}
               className={`px-4 py-2 rounded-md shadow-sm transition-colors ${
-                !selectedPlate || availableSpots === null || availableSpots === 0 || dateTimeError !== ''
+                !selectedPlate || !availableSpots?.available || dateTimeError !== '' || isLoadingSpots
                   ? 'bg-lib-secondary text-tertiary cursor-not-allowed'
                   : 'bg-lib-primary text-on-primary hover:opacity-90'
               }`}
             >
               {!selectedPlate && 'Aggiungi una targa'}
-              {selectedPlate && dateTimeError && 'Data/Orario non valido'}
-              {selectedPlate && !dateTimeError && availableSpots === 0 && 'Completo'}
-              {selectedPlate && !dateTimeError && availableSpots !== 0 && availableSpots !== null && 'Conferma Prenotazione'}
-              {selectedPlate && !dateTimeError && availableSpots === null && 'Seleziona data e orario'}
+              {selectedPlate && dateTimeError && 'Orario non valido'}
+              {selectedPlate && !dateTimeError && availableSpots && !availableSpots.available && 'Completo'}
+              {selectedPlate && !dateTimeError && (!availableSpots || isLoadingSpots) && 'Seleziona orario'}
+              {selectedPlate && !dateTimeError && availableSpots?.available && !isLoadingSpots && 'Conferma'}
             </button>
           </div>
         </form>

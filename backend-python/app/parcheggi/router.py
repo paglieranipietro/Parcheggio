@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.get("/")
 def get_parcheggi(db: Session = Depends(get_db)):
-    """Restituisce la lista di tutti i parcheggi"""
+    """Restituisce la lista di tutti i parcheggi."""
     return db.query(models.Parcheggio).all()
 
 @router.post("/")

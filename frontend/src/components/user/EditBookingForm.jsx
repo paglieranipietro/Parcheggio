@@ -1,77 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/mockApi';
+import api from '../../services/api';
 
 const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
   const [date, setDate] = useState(booking.date);
   const [hour, setHour] = useState(parseInt(booking.time.split(':')[0]));
   const [minute, setMinute] = useState(parseInt(booking.time.split(':')[1]));
   const [duration, setDuration] = useState(booking.duration.toString());
+  
   const [availableSpots, setAvailableSpots] = useState(null);
   const [dateTimeError, setDateTimeError] = useState('');
   const [updateError, setUpdateError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // NUOVO: Stato per salvare la tariffa oraria
+  const [hourlyRate, setHourlyRate] = useState(0);
 
-  // Ottiene la data odierna in formato YYYY-MM-DD
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
-
-  // Ottiene l'ora corrente
-  const getCurrentHour = () => new Date().getHours();
-  const getCurrentMinute = () => new Date().getMinutes();
-
-  // Calcola il prezzo della prenotazione
-  const calculatePrice = async () => {
-    try {
-      const parkings = await api.getParkingLots();
-      const parking = parkings.find(p => p.id === booking.parkingId);
-      if (!parking) return '0.00';
-      // Usa hourly_rate se disponibile (da API), altrimenti hourlyRate
-      const rate = parking.hourly_rate || parking.hourlyRate || 0;
-      return (parseFloat(duration) * rate).toFixed(2);
-    } catch (error) {
-      console.error('Errore nel calcolo prezzo:', error);
-      return '0.00';
-    }
-  };
-
-  // Aggiorna i posti disponibili quando cambiano data/ora/durata
+  // 1. Recuperiamo la tariffa oraria del parcheggio UNA SOLA VOLTA all'avvio
   useEffect(() => {
-    if (!date) {
-      setAvailableSpots(null);
-      return;
-    }
+    const fetchRate = async () => {
+      try {
+        const parkings = await api.getParkingLots();
+        const parking = parkings.find(p => p.id === booking.parkingId);
+        if (parking) {
+          setHourlyRate(parking.hourly_rate || parking.hourlyRate || 0);
+        }
+      } catch (error) {
+        console.error('Errore nel recupero tariffa:', error);
+      }
+    };
+    fetchRate();
+  }, [booking.parkingId]);
 
-    const today = getTodayDate();
-    
-    // Validazione data nel passato
-    if (date < today) {
-      setDateTimeError('Non puoi prenotare per una data passata');
-      setAvailableSpots(null);
-      return;
-    }
+  // 2. Calcolo prezzo SINCRONO (senza async/await, non rompe più React!)
+  const calculatePrice = () => {
+    return (parseFloat(duration) * hourlyRate).toFixed(2);
+  };
 
-    // Validazione orario nel passato (se è oggi)
-    if (date === today && hour !== '' && minute !== '') {
-      const currentHour = getCurrentHour();
-      const currentMinute = getCurrentMinute();
-      const selectedTimeInMinutes = parseInt(hour) * 60 + parseInt(minute);
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      
-      if (selectedTimeInMinutes <= currentTimeInMinutes) {
-        setDateTimeError('Non puoi prenotare per un orario già trascorso');
-        setAvailableSpots(null);
+  // 3. Controllo Reale della disponibilità (Uguale a quello robusto del BookingForm)
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkAvailability = async () => {
+      if (!date || hour === '' || minute === '' || !duration) {
+        if (isMounted) setAvailableSpots(null);
         return;
       }
-    }
 
-    // Resetta l'errore
-    // Nota: checkSlotAvailability non è disponibile nella API attuale
-    // Per ora, assumiamo che lo slot sia disponibile se la data/ora è valida
-    setDateTimeError('');
-    setAvailableSpots({ available: true, spots: 999 });
-  }, [date, hour, minute, duration, booking.parkingId, booking.id]);
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (date < today) {
+        if (isMounted) setDateTimeError('Non puoi prenotare per una data passata');
+        return;
+      }
+
+      if (date === today) {
+        const currentHour = new Date().getHours();
+        const currentMinute = new Date().getMinutes();
+        const selectedTimeInMinutes = parseInt(hour) * 60 + parseInt(minute);
+        const currentTimeInMinutes = currentHour * 60 + currentMinute;
+        
+        if (selectedTimeInMinutes <= currentTimeInMinutes) {
+          if (isMounted) setDateTimeError('Non puoi prenotare per un orario già trascorso');
+          return;
+        }
+      }
+
+      if (isMounted) setDateTimeError('');
+
+      try {
+        const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        // Interroghiamo il database reale!
+        const spots = await api.getAvailableSpotsForDateTime(
+          booking.parkingId, 
+          date, 
+          time,
+          parseFloat(duration)
+        );
+        if (isMounted) setAvailableSpots(spots);
+      } catch (error) {
+        console.error("Errore disponibilità:", error);
+      }
+    };
+
+    checkAvailability();
+  }, [date, hour, minute, duration, booking.parkingId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,13 +94,13 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
     }
 
     if (!availableSpots || !availableSpots.available) {
-      alert('Lo slot selezionato non è disponibile');
+      alert('Lo slot selezionato non è disponibile in questo orario');
       return;
     }
 
     setIsLoading(true);
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    const price = await calculatePrice();
+    const finalPrice = calculatePrice();
 
     try {
       await api.updateBooking(booking.id, {
@@ -96,11 +108,10 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
         date,
         time,
         duration: parseInt(duration),
-        price: parseFloat(price),
+        price: parseFloat(finalPrice),
         licensePlate: booking.licensePlate
       });
-      alert(`Prenotazione modificata con successo!\nNuovo totale: €${price}`);
-      onSuccess();
+      onSuccess(); // Chiude il form in automatico
     } catch (error) {
       setUpdateError(`Errore: ${error.message}`);
     } finally {
@@ -123,7 +134,7 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
             <input 
               type="date" 
               required 
-              min={getTodayDate()}
+              min={new Date().toISOString().split('T')[0]}
               value={date} 
               onChange={(e) => setDate(e.target.value)} 
               className="w-full bg-lib-secondary border border-lib-border rounded-md px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-lib-primary focus:border-transparent"
@@ -143,16 +154,9 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
                 >
                   <option value="">Ora</option>
                   {[...Array(24)].map((_, i) => {
-                    const today = getTodayDate();
-                    const currentHour = getCurrentHour();
-                    if (date === today && i < currentHour) {
-                      return null;
-                    }
-                    return (
-                      <option key={i} value={i}>
-                        {String(i).padStart(2, '0')}
-                      </option>
-                    );
+                    const today = new Date().toISOString().split('T')[0];
+                    if (date === today && i < new Date().getHours()) return null;
+                    return <option key={i} value={i}>{String(i).padStart(2, '0')}</option>;
                   })}
                 </select>
               </div>
@@ -166,17 +170,9 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
                 >
                   <option value="">Min</option>
                   {[0, 15, 30, 45].map((m) => {
-                    const today = getTodayDate();
-                    const currentHour = getCurrentHour();
-                    const currentMinute = getCurrentMinute();
-                    if (date === today && hour == currentHour && m <= currentMinute) {
-                      return null;
-                    }
-                    return (
-                      <option key={m} value={m}>
-                        {String(m).padStart(2, '0')}
-                      </option>
-                    );
+                    const today = new Date().toISOString().split('T')[0];
+                    if (date === today && hour === new Date().getHours() && m <= new Date().getMinutes()) return null;
+                    return <option key={m} value={m}>{String(m).padStart(2, '0')}</option>;
                   })}
                 </select>
               </div>
@@ -200,6 +196,7 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
             </select>
           </div>
 
+          {/* Feedback Errori e Disponibilità */}
           {dateTimeError && (
             <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30">
               <p className="text-red-400 text-sm font-medium">⚠️ {dateTimeError}</p>
@@ -212,18 +209,24 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
             </div>
           )}
 
-          {!dateTimeError && availableSpots !== null && !availableSpots.available && (
-            <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30">
-              <p className="text-red-400 text-sm font-medium">
-                ✗ Slot non disponibile. Posti liberi: {availableSpots.freeSpots}/{availableSpots.totalSpots}
-              </p>
+          {!dateTimeError && availableSpots !== null && (
+            <div className={`p-3 rounded-md ${availableSpots.available ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
+              {availableSpots.available ? (
+                <p className="text-green-400 text-sm font-medium">
+                  ✓ Posti disponibili: <strong>{availableSpots.spots}/{availableSpots.total_spots}</strong>
+                </p>
+              ) : (
+                <p className="text-red-400 text-sm font-medium">
+                  ✗ Slot non disponibile in questo orario.
+                </p>
+              )}
             </div>
           )}
 
           <div className="bg-lib-secondary p-3 rounded-lg border border-lib-border">
-            <div className="flex justify-between">
-              <span className="text-tertiary">Prezzo:</span>
-              <span className="font-bold text-green-400">€{calculatePrice()}</span>
+            <div className="flex justify-between items-center">
+              <span className="text-tertiary">Nuovo Prezzo:</span>
+              <span className="font-bold text-green-400 text-lg">€{calculatePrice()}</span>
             </div>
           </div>
 
@@ -238,9 +241,9 @@ const EditBookingForm = ({ booking, onSuccess, onCancel }) => {
             <button
               type="submit"
               disabled={!availableSpots?.available || dateTimeError || isLoading}
-              className="flex-1 px-4 py-2 bg-lib-primary text-white rounded-lg hover:bg-lib-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-lib-primary text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? '...Modificando' : 'Modifica'}
+              {isLoading ? 'Salvataggio...' : 'Conferma Modifica'}
             </button>
           </div>
         </form>

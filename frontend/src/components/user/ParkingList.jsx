@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/mockApi';
+import api from '../../services/api';
 
 const ParkingList = ({ onSelectParking, onFocusParking, refreshTrigger }) => {
   const [parkings, setParkings] = useState([]);
@@ -43,13 +43,22 @@ const ParkingList = ({ onSelectParking, onFocusParking, refreshTrigger }) => {
             </div>
 
             <div className="mt-4">
-              <div className="mb-4 p-3 bg-lib-secondary rounded-md border border-lib-border">
-                <p className="text-sm text-tertiary">
-                  Tariffa oraria: <span className="text-primary font-semibold">€{Number(parking.hourly_rate || 0).toFixed(2)}/ora</span>
-                </p>
-                <p className="text-sm text-tertiary mt-1">
-                  Posti totali: <span className="text-primary font-semibold">{parking.total_spots}</span>
-                </p>
+              <div className="bg-lib-primary/10 p-3 rounded-lg border border-lib-border mt-4 mb-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-tertiary">Tariffa oraria:</span>
+                  <span className="text-sm text-primary font-bold">
+                    €{Number(parking.hourly_rate || parking.hourlyRate || 0).toFixed(2)}/ora
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center border-t border-lib-border/50 pt-2">
+                  <span className="text-sm text-tertiary">Disponibilità:</span>
+                  <span className={`text-sm font-bold ${
+                    parking.available_spots > 0 ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {parking.available_spots !== undefined ? parking.available_spots : parking.total_spots} / {parking.total_spots}
+                  </span>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button 

@@ -4,7 +4,10 @@ export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
-    // Controlla localStorage per la preferenza salvata
+    /**
+     * Verifica se l'utente ha una preferenza di tema salvata in localStorage.
+     * Impostazione predefinita: dark mode.
+     */
     const saved = localStorage.getItem('theme');
     return saved ? JSON.parse(saved) : true; // Default: dark mode
   });

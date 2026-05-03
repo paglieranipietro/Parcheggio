@@ -1,6 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom'; // Rimosso BrowserRouter da qui
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
@@ -22,12 +22,14 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Rotta dinamica: se sei admin vai alla dashboard admin, altrimenti utente */}
+      /**
+       * Instradamento basato sul ruolo dell'utente.
+       */
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            {user?.role === 'admin' ? <AdminDashboard /> : <UserDashboard />}
+            {user?.ruolo === 'admin' ? <AdminDashboard /> : <UserDashboard />}
           </ProtectedRoute>
         }
       />
@@ -38,12 +40,8 @@ function AppRoutes() {
 }
 
 function App() {
-  return (
-    // Rimosso <BrowserRouter> da qui, lasciamo solo l'AuthProvider
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
-  );
+  // L'AuthProvider ora è SOLO nel main.jsx, come da best practice!
+  return <AppRoutes />;
 }
 
 export default App;

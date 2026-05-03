@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminStats from './AdminStats';
 import ParkingTable from './ParkingTable';
-import api from '../../services/mockApi';
+import api from '../../services/api';
 
 export default function ParkingForm() {
     const [parkings, setParkings] = useState([]);
@@ -9,6 +9,7 @@ export default function ParkingForm() {
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [selectedParkingToRemove, setSelectedParkingToRemove] = useState('');
     const [selectedParking, setSelectedParking] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     // Form state per aggiungere parcheggi
     const [formData, setFormData] = useState({
@@ -47,30 +48,59 @@ export default function ParkingForm() {
         e.preventDefault();
 
         if (!formData.name || !formData.maxSpots || !formData.address || !formData.hourlyRate) {
-            alert('Per favore, compila tutti i campi obbligatori');
             return;
         }
 
-        const newParking = {
-            name: formData.name,
-            totalSpots: parseInt(formData.maxSpots), // api vuole totalSpots
-            freeSpots: parseInt(formData.maxSpots),
-            description: formData.description,
-            address: formData.address,
-            hourlyRate: parseFloat(formData.hourlyRate)
-        };
-
         try {
+            // 1. GEOCODING: Trasformiamo l'indirizzo in coordinate GPS usando OpenStreetMap
+            let lat = 45.5415; // Default Brescia
+            let lng = 10.2160;
+            
+            try {
+                // Cerchiamo l'indirizzo (aggiungiamo "Brescia" se non c'è, per aiutare la ricerca)
+                const searchQuery = formData.address.toLowerCase().includes('brescia') 
+                    ? formData.address 
+                    : `${formData.address}, Brescia, Italy`;
+                    
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+                const geoData = await geoRes.json();
+
+                if (geoData && geoData.length > 0) {
+                    lat = parseFloat(geoData[0].lat);
+                    lng = parseFloat(geoData[0].lon); // Nominatim lo chiama 'lon'
+                } else {
+                    console.warn('Coordinate non trovate per questo indirizzo, uso il default.');
+                }
+            } catch (geoError) {
+                console.error('Errore nel geocoding:', geoError);
+            }
+
+            // 2. Prepariamo l'oggetto COMPLETO da mandare al backend
+            const newParking = {
+                name: formData.name,
+                totalSpots: parseInt(formData.maxSpots), 
+                freeSpots: parseInt(formData.maxSpots),
+                description: formData.description,
+                address: formData.address,
+                hourlyRate: parseFloat(formData.hourlyRate),
+                lat: lat, // Ora passiamo le coordinate!
+                lng: lng,
+                co2: 120 // Un valore di default realistico per il risparmio CO2
+            };
+
+            // 3. Inviamo al server
             await api.addParking(newParking);
+            
             // Aggiorna la UI
             const updated = await api.getParkingLots();
             const formattedParkings = updated.map(p => ({ ...p, maxSpots: p.totalSpots || p.total_spots || 0 }));
             setParkings(formattedParkings);
-            alert('Parcheggio aggiunto con successo!');
+            
+            // Svuota e chiudi silenziosamente
             setFormData({ name: '', maxSpots: '', description: '', address: '', hourlyRate: '' });
             setShowAddModal(false);
         } catch (error) {
-            alert(`Errore: ${error.message}`);
+            console.error(`Errore durante l'aggiunta: ${error.message}`);
         }
     };
 
@@ -78,7 +108,6 @@ export default function ParkingForm() {
         e.preventDefault();
 
         if (!selectedParkingToRemove) {
-            alert('Per favore, seleziona un parcheggio');
             return;
         }
 
@@ -88,15 +117,86 @@ export default function ParkingForm() {
 
         try {
             await api.deleteParking(parseInt(selectedParkingToRemove));
+            
             // Aggiorna la UI
             const updated = await api.getParkingLots();
             const formattedParkings = updated.map(p => ({ ...p, maxSpots: p.totalSpots || p.total_spots || 0 }));
             setParkings(formattedParkings);
-            alert('Parcheggio eliminato con successo!');
+            
+            // Resetta e chiudi la modale silenziosamente
             setSelectedParkingToRemove('');
             setShowRemoveModal(false);
         } catch (error) {
-            alert(`Errore: ${error.message}`);
+            // Niente più alert, loggiamo l'errore solo in console per debug
+            console.error(`Errore durante l'eliminazione: ${error.message}`);
+        }
+    };
+
+    const handleOpenEdit = () => {
+        if (!selectedParking) return; // Sicurezza
+        
+        // Pre-popoliamo il form con i dati attuali del parcheggio selezionato
+        setFormData({
+            name: selectedParking.name,
+            maxSpots: selectedParking.total_spots || selectedParking.maxSpots || '',
+            description: selectedParking.description || '',
+            address: selectedParking.address || '',
+            hourlyRate: selectedParking.hourly_rate || selectedParking.hourlyRate || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditParking = async (e) => {
+        e.preventDefault();
+
+        if (!formData.name || !formData.maxSpots || !formData.address || !formData.hourlyRate) return;
+
+        try {
+            // 1. GEOCODING (come nell'aggiunta)
+            let lat = selectedParking.lat; // Default a quelli vecchi
+            let lng = selectedParking.lng;
+            
+            // Ricalcoliamo le coordinate solo se l'indirizzo è stato cambiato
+            if (formData.address !== selectedParking.address) {
+                try {
+                    const searchQuery = formData.address.toLowerCase().includes('brescia') 
+                        ? formData.address : `${formData.address}, Brescia, Italy`;
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+                    const geoData = await geoRes.json();
+
+                    if (geoData && geoData.length > 0) {
+                        lat = parseFloat(geoData[0].lat);
+                        lng = parseFloat(geoData[0].lon);
+                    }
+                } catch (geoError) {
+                    console.error('Errore geocoding in modifica:', geoError);
+                }
+            }
+
+            // 2. Prepariamo i dati
+            const updatedData = {
+                name: formData.name,
+                total_spots: parseInt(formData.maxSpots), 
+                address: formData.address,
+                lat: lat,
+                lng: lng,
+                hourly_rate: parseFloat(formData.hourlyRate),
+                co2: selectedParking.co2 || 120
+            };
+
+            // 3. Inviamo al server
+            await api.updateParking(selectedParking.id, updatedData);
+            
+            // 4. Aggiorna UI
+            const updated = await api.getParkingLots();
+            const formattedParkings = updated.map(p => ({ ...p, maxSpots: p.totalSpots || p.total_spots || 0 }));
+            setParkings(formattedParkings);
+            
+            // Chiudi silenziosamente e aggiorna il parcheggio selezionato
+            setShowEditModal(false);
+            setSelectedParking(formattedParkings.find(p => p.id === selectedParking.id));
+        } catch (error) {
+            console.error(`Errore durante la modifica: ${error.message}`);
         }
     };
 
@@ -113,13 +213,19 @@ export default function ParkingForm() {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="bg-green-500 hover:bg-green-600 text-on-primary font-semibold py-1 px-3 rounded-lg transition-colors duration-200 text-sm"
+                                className="bg-green-500 hover:bg-green-600 text-on-primary font-semibold py-1 px-2 rounded-lg transition-colors duration-200 text-xs"
                             >
                                 + Aggiungi
                             </button>
                             <button
+                                onClick={handleOpenEdit}
+                                className="bg-blue-500 hover:bg-blue-600 text-on-primary font-semibold py-1 px-2 rounded-lg transition-colors duration-200 text-xs"
+                            >
+                                * Modifica
+                            </button>
+                            <button
                                 onClick={() => setShowRemoveModal(true)}
-                                className="bg-red-500 hover:bg-red-600 text-on-primary font-semibold py-1 px-3 rounded-lg transition-colors duration-200 text-sm"
+                                className="bg-red-500 hover:bg-red-600 text-on-primary font-semibold py-1 px-2 rounded-lg transition-colors duration-200 text-xs"
                             >
                                 - Rimuovi
                             </button>
@@ -177,6 +283,39 @@ export default function ParkingForm() {
                         </div>
                     </div>
                 )}
+
+                {/* === NUOVA MODALE DI MODIFICA === */}
+                {showEditModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowEditModal(false)}>
+                        <div className="bg-lib-card rounded-lg p-8 max-w-md w-11/12 shadow-xl border border-lib-border" onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold text-primary mb-6">Modifica Parcheggio</h3>
+                            <form onSubmit={handleEditParking} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Nome Parcheggio *</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Numero Posti Massimi *</label>
+                                    <input type="number" name="maxSpots" value={formData.maxSpots} onChange={handleInputChange} min="1" className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Indirizzo *</label>
+                                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-secondary mb-2">Tariffa Oraria (€) *</label>
+                                    <input type="number" name="hourlyRate" value={formData.hourlyRate} onChange={handleInputChange} step="0.01" min="0" className="w-full px-4 py-2 border border-lib-border rounded-lg bg-lib-secondary text-primary" required />
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-on-primary font-semibold py-2 px-4 rounded-lg">Salva Modifiche</button>
+                                    <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-on-primary font-semibold py-2 px-4 rounded-lg">Annulla</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+                {/* === FINE MODALE DI MODIFICA === */}
+
 
                 {/* Modal Rimuovi Parcheggio */}
                 {showRemoveModal && (

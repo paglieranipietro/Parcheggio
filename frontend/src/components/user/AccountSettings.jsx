@@ -49,7 +49,9 @@ const AccountSettings = ({ onClose }) => {
       return;
     }
     
-    // Verifica il formato della targa: 2 lettere + 3 numeri + 2 lettere
+    /**
+     * Verifica se la targa ha il formato italiano corretto: 2 lettere + 3 numeri + 2 lettere.
+     */
     const plateRegex = /^[A-Z]{2}\d{3}[A-Z]{2}$/;
     if (!plateRegex.test(newPlate)) {
       setPlateMessage({ type: 'error', text: 'Formato non valido. Usa: 2 lettere, 3 numeri, 2 lettere (es: AB123CD)' });
@@ -57,8 +59,8 @@ const AccountSettings = ({ onClose }) => {
       return;
     }
     
-    // Verifica che la targa non sia già presente
-    if (user.licensePlates.some(p => p.plate === newPlate.toUpperCase())) {
+    // CORREZIONE 1: Aggiunto fallback (user?.licensePlates || [])
+    if ((user?.licensePlates || []).some(p => p.plate === newPlate.toUpperCase())) {
       setPlateMessage({ type: 'error', text: 'Questa targa è già registrata' });
       setTimeout(() => setPlateMessage(''), 3000);
       return;
@@ -78,8 +80,12 @@ const AccountSettings = ({ onClose }) => {
 
   const handleSelectPlate = (plateId) => {
     selectLicensePlate(plateId);
-    const selectedPlate = user.licensePlates.find(p => p.id === plateId);
-    setPlateMessage({ type: 'success', text: `Targa ${selectedPlate.plate} selezionata` });
+    // CORREZIONE 2: Aggiunto fallback (user?.licensePlates || [])
+    const selectedPlate = (user?.licensePlates || []).find(p => p.id === plateId);
+    
+    if (selectedPlate) {
+      setPlateMessage({ type: 'success', text: `Targa ${selectedPlate.plate} selezionata` });
+    }
     setTimeout(() => setPlateMessage(''), 3000);
   };
 
@@ -254,9 +260,9 @@ const AccountSettings = ({ onClose }) => {
             </div>
 
             {/* Lista targhe */}
-            {user.licensePlates && user.licensePlates.length > 0 ? (
+            {(user?.licensePlates || []).length > 0 ? (
               <div className="space-y-2">
-                {user.licensePlates.map(plate => (
+                {(user?.licensePlates || []).map(plate => (
                   <div
                     key={plate.id}
                     className={`flex items-center justify-between p-3 rounded-md border ${

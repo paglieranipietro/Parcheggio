@@ -9,7 +9,7 @@ from datetime import datetime
 router = APIRouter()
 
 def genera_codice_green():
-    """Genera un codice univoco alfanumerico per lo Scenario Green"""
+    """Genera un codice univoco alfanumerico per la prenotazione."""
     random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     return f"GRN-{random_str}"
 

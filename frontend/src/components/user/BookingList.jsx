@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/mockApi';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import EditBookingForm from './EditBookingForm';
 
@@ -13,17 +13,29 @@ const BookingList = ({ refreshTrigger }) => {
   const loadBookings = async () => {
     try {
       const data = await api.getUserReservations(); 
-      const formattedData = data.map(b => ({
-        id: b.id,
-        parkingName: b.parking_lot_name,
-        date: b.start_time.split(' ')[0],
-        time: b.start_time.split(' ')[1],
-        duration: 1, 
-        licensePlate: b.license_plate,
-        price: 0, 
-        displayStatus: b.status.toLowerCase(),
-        code: b.id.substring(0, 8).toUpperCase()
-      }));
+      const formattedData = data.map(b => {
+        let statusIta = 'sconosciuta';
+        if (b.status === 'ACTIVE') statusIta = 'attiva';
+        if (b.status === 'COMPLETED') statusIta = 'scaduta';
+        if (b.status === 'CANCELLED') statusIta = 'annullata';
+
+        const start = new Date(b.start_time);
+        const end = new Date(b.end_time);
+        const durationHours = Math.round((end - start) / (1000 * 60 * 60)) || 1;
+
+        return {
+          id: b.id,
+          parkingId: b.parking_lot_id, // <-- ECCO QUELLO CHE FACEVA CRASHARE IL TASTO!
+          parkingName: b.parking_lot_name,
+          date: b.start_time.split(' ')[0],
+          time: b.start_time.split(' ')[1].substring(0, 5),
+          duration: durationHours, 
+          licensePlate: b.license_plate,
+          price: parseFloat(b.price) || 0, 
+          displayStatus: statusIta,
+          code: b.id.substring(0, 8).toUpperCase()
+        };
+      });
       setBookings(formattedData);
     } catch (err) {
       console.error("Errore nel caricamento", err);
@@ -187,7 +199,7 @@ const BookingList = ({ refreshTrigger }) => {
       )}
 
       {/* Modal Modifica Prenotazione */}
-      {editingBookingId && bookings.length > 0 && (
+      {editingBookingId && bookings.find(b => b.id === editingBookingId) && (
         <EditBookingForm 
           booking={bookings.find(b => b.id === editingBookingId)}
           onSuccess={handleEditSuccess}

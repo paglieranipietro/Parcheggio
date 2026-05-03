@@ -32,7 +32,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Nel payload JWT salviamo email e il ruolo in italiano (es. "utente" o "amministratore")
+    """Nel payload JWT vengono salvati email e ruolo in italiano ('utente' o 'amministratore')."""
     access_token = service.create_access_token(
         data={"sub": user.email, "role": user.ruolo}
     )

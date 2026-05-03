@@ -5,16 +5,13 @@ import LoginForm from '../components/auth/LoginForm';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState('');
-
   const successMessage = location.state?.successMessage;
 
-  const handleRedirect = (role) => {
-    if (role === 'amministratore' || role === 'admin') {
-      navigate('/admin-dashboard');
-    } else {
-      navigate('/user-dashboard');
-    }
+  /**
+   * Reindirizza l'utente alla dashboard (il routing basato su ruolo avviene in App.jsx).
+   */
+  const handleRedirect = () => {
+    navigate('/dashboard');
   };
 
   return (

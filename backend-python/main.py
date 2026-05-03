@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import dei router
+"""Importazione dei router di autenticazione, parcheggi e prenotazioni."""
 from app.auth.router import router as auth_router
 from app.parcheggi.router import router as parcheggi_router
 from app.prenotazioni.router import router as prenotazioni_router

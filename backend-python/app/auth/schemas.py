@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-# Input per Registrazione
+"""Schema per i dati di registrazione dell'utente."""
 class UserCreate(BaseModel):
     email: EmailStr
     password: str

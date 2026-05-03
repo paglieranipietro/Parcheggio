@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import models  
 from . import schemas
 
-# Config
+"""Variabili di configurazione per JWT (Secret Key, Algoritmo, Durata Token)."""
 SECRET_KEY = os.getenv("JWT_SECRET", "secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))

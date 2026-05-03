@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
-# 1. TABELLA UTENTI
+"""Modello di tabella per la gestione degli utenti."""
 class Utente(Base):
     __tablename__ = "utenti"
 

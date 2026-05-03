@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# quando passeremo a mariadb e php: cambiare solo questa stringa nel .env con: mysql+pymysql://user:pass@db_host/db_name
+"""Configurazione della stringa di connessione al database. In produzione, utilizzare variabili d'ambiente con MariaDB."""
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./auth.db")
 
 # Configurazione specifica per SQLite (check_same_thread=False necessario solo per SQLite)

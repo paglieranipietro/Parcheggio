@@ -67,7 +67,10 @@ export const api = {
     const start = new Date(`${bookingData.date}T${bookingData.time}`);
     const duration = bookingData.duration || 1;
     const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
-    const formatDb = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+    const formatDb = (d) => {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+    };
 
     const response = await fetch(`${BASE_URL}/reservations`, {
       method: 'POST',
@@ -76,7 +79,8 @@ export const api = {
         parking_lot_id: bookingData.parkingId,
         start_time: formatDb(start),
         end_time: formatDb(end),
-        license_plate: bookingData.licensePlate
+        license_plate: bookingData.licensePlate,
+        price: bookingData.price 
       })
     });
     if (!response.ok) throw new Error('Errore nella creazione della prenotazione');
@@ -87,7 +91,10 @@ export const api = {
     const start = new Date(`${bookingData.date}T${bookingData.time}`);
     const duration = bookingData.duration || 1;
     const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
-    const formatDb = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+    const formatDb = (d) => {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+    };
 
     const response = await fetch(`${BASE_URL}/reservations/${id}`, {
       method: 'PUT',
@@ -96,7 +103,8 @@ export const api = {
         parking_lot_id: bookingData.parkingId,
         start_time: formatDb(start),
         end_time: formatDb(end),
-        license_plate: bookingData.licensePlate
+        license_plate: bookingData.licensePlate,
+        price: bookingData.price 
       })
     });
     if (!response.ok) throw new Error('Errore nell\'aggiornamento della prenotazione');
@@ -152,6 +160,16 @@ export const api = {
     return await response.json();
   },
 
+  updateParking: async (id, parkingData) => {
+        const response = await fetch(`${BASE_URL}/parking-lots/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(parkingData)
+        });
+        if (!response.ok) throw new Error('Errore durante la modifica del parcheggio');
+        return await response.json();
+    },
+
   deleteParking: async (id) => {
     const response = await fetch(`${BASE_URL}/parking-lots/${id}`, {
       method: 'DELETE',
@@ -167,6 +185,70 @@ export const api = {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error('Prenotazione non trovata');
+    return await response.json();
+  },
+
+  // License Plates Management
+  addLicensePlate: async (targa) => {
+    const response = await fetch(`${BASE_URL}/auth/license-plates`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ targa })
+    });
+    if (!response.ok) throw new Error('Errore nell\'aggiunta della targa');
+    return await response.json();
+  },
+
+  getLicensePlates: async () => {
+    const response = await fetch(`${BASE_URL}/auth/license-plates`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Errore nel caricamento delle targhe');
+    return await response.json();
+  },
+
+  deleteLicensePlate: async (plateId) => {
+    const response = await fetch(`${BASE_URL}/auth/license-plates/${plateId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Errore nell\'eliminazione della targa');
+    return await response.json();
+  },
+
+  selectLicensePlate: async (plateId) => {
+    const response = await fetch(`${BASE_URL}/auth/license-plates/${plateId}/select`, {
+      method: 'PUT',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Errore nella selezione della targa');
+    return await response.json();
+  },
+
+  // Aggiornamento Profilo
+  updateProfile: async (userData) => {
+    const response = await fetch(`${BASE_URL}/auth/me`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        nome: userData.name || userData.nome,
+        cognome: userData.surname || userData.cognome,
+        telefono: userData.phone || userData.telefono,
+        data_nascita: userData.birthDate || userData.data_nascita
+      })
+    });
+    if (!response.ok) throw new Error('Errore nell\'aggiornamento del profilo');
+    return await response.json();
+  },
+
+  // Statistiche per Admin
+  getParkingStats: async (parkingId) => {
+    const response = await fetch(`${BASE_URL}/parking-lots/${parkingId}/stats`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Errore caricamento statistiche');
     return await response.json();
   }
 };

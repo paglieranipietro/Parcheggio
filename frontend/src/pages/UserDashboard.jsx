@@ -6,7 +6,7 @@ import BookingForm from '../components/user/BookingForm';
 import AccountSettings from '../components/user/AccountSettings';
 import ParkingMap from '../components/map/ParkingMap';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/mockApi';
+import api from '../services/api';
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -21,38 +21,60 @@ const UserDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await api.getParkingLots();
-        setParkings(data);
+        /**
+         * Caricamento parallelo di parcheggi e prenotazioni.
+         */
+        const [parkingsData, userBookings] = await Promise.all([
+          api.getParkingLots(),
+          api.getUserReservations()
+        ]);
         
-        const userBookings = await api.getUserReservations();
+        setParkings(parkingsData);
         
+        // Formattazione dati sincronizzata con il database reale
         const formattedBookings = userBookings.map(b => {
+          // 1. Traduzione stato DB -> UI per abilitare i tasti Azione
+          let statusIta = 'sconosciuta';
+          if (b.status === 'ACTIVE') statusIta = 'attiva';
+          if (b.status === 'COMPLETED') statusIta = 'scaduta';
+          if (b.status === 'CANCELLED') statusIta = 'annullata';
+
+          // 2. Calcolo durata reale
           const start = new Date(b.start_time);
           const end = new Date(b.end_time);
-          const durationHours = (end - start) / (1000 * 60 * 60) || 1;
-          const parking = data.find(p => p.id === b.parking_lot_id);
-          const price = parking ? parking.hourly_rate * durationHours : 0;
+          const durationHours = Math.round((end - start) / (1000 * 60 * 60)) || 1;
 
           return {
             ...b,
             parkingId: b.parking_lot_id,
-            date: start.toLocaleDateString('it-IT'),
-            time: start.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-            code: b.id.substring(0, 8).toUpperCase(),
+            parkingName: b.parking_lot_name,
+            date: b.start_time.split(' ')[0],
+            // Mostriamo solo HH:mm togliendo i secondi
+            time: b.start_time.split(' ')[1].substring(0, 5),
             duration: durationHours,
-            price: price,
+            price: parseFloat(b.price) || 0, // Prezzo reale dal DB
+            displayStatus: statusIta,
+            code: b.id.substring(0, 8).toUpperCase(),
             licensePlate: b.license_plate
           };
         });
         
         setBookings(formattedBookings);
       } catch (error) {
-        console.error('Errore nel caricamento dati:', error);
+        console.error('Errore sincronizzazione automatica:', error);
       }
     };
     
+    // Primo caricamento immediato all'apertura
     loadData();
-  }, [user.id, refreshBookings]);
+
+    // HEARTBEAT: Sincronizzazione automatica ogni 15 secondi
+    // Mantiene aggiornati posti disponibili sulla mappa e stati prenotazioni
+    const interval = setInterval(loadData, 15000); 
+    
+    // Cleanup per evitare memory leak quando l'utente esce dalla dashboard
+    return () => clearInterval(interval);
+  }, [user.id, refreshBookings]); // Scatta anche al cambio utente o refresh manuale
 
   const handleOpenBooking = (parking) => {
     setSelectedParking(parking);
